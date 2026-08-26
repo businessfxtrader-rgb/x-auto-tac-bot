@@ -1,5 +1,10 @@
 {
-  "recentCategories": [],
-  "lastVideoId": null,
-  "dailyPostCount": { "date": null, "count": 0 }
+  "recentCategories": [
+    "video_announcement"
+  ],
+  "lastVideoId": "0yuVXkAqQo0",
+  "dailyPostCount": {
+    "date": "2026-08-27",
+    "count": 1
+  }
 }
