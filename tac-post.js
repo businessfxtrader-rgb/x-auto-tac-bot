@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
-const { apiPostJson, loadConfig } = require('./oauth-lib');
+const { apiPostJson, apiGet, loadConfig } = require('./oauth-lib');
 
 const config = loadConfig();
 const STATE_FILE = path.join(__dirname, 'state.json');
@@ -15,6 +15,13 @@ const X_API_BASE = 'https://api.twitter.com/2';
 
 // 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁)
 const MAX_POSTS_PER_DAY = 3;
+
+// 投稿時間帯のA/Bテスト設定
+const CANDIDATE_SLOTS_JST = [7, 10, 13, 16, 19, 22];
+const POSTS_PER_DAY_TARGET = 2;
+const EPSILON = 0.25; // この確率でランダムな(まだ実績の薄い)時間帯を試す
+const METRICS_DELAY_HOURS = 24; // 投稿からこれだけ経過したらインプレッションを取得
+const METRICS_GIVEUP_HOURS = 24 * 4; // これ以上経っても取得できなければ諦める
 
 const CATEGORIES = [
   { id: 'market_news', label: '市場ニュース・相場コメント', weight: 3, needsSearch: true },
@@ -31,19 +38,69 @@ const BANNED_PATTERNS = [
 ];
 
 function loadState() {
-  if (!fs.existsSync(STATE_FILE)) {
-    return { recentCategories: [], lastVideoId: null, dailyPostCount: { date: null, count: 0 } };
-  }
-  return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+  const defaults = {
+    recentCategories: [],
+    lastVideoId: null,
+    dailyPostCount: { date: null, count: 0 },
+    slotStats: {},
+    todaysPlan: { date: null, slots: [] },
+    pendingMetrics: [],
+  };
+  if (!fs.existsSync(STATE_FILE)) return defaults;
+  return { ...defaults, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
 }
 
 function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
+function nowJst() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000);
+}
+
 function todayJst() {
-  const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return jst.toISOString().slice(0, 10);
+  return nowJst().toISOString().slice(0, 10);
+}
+
+function currentHourJst() {
+  return nowJst().getUTCHours();
+}
+
+// 今日投稿する時間帯を、実績に基づくε-greedy方式で選ぶ(1日1回だけ計算し、当日はstateに固定する)
+function buildTodaysPlan(slotStats) {
+  const chosen = [];
+  const remaining = [...CANDIDATE_SLOTS_JST];
+
+  function avgImpressions(slot) {
+    const s = slotStats[slot];
+    if (!s || s.trials === 0) return null;
+    return s.totalImpressions / s.trials;
+  }
+
+  for (let i = 0; i < POSTS_PER_DAY_TARGET && remaining.length > 0; i++) {
+    const untried = remaining.filter((s) => avgImpressions(s) === null);
+    let pick;
+    if (untried.length > 0) {
+      // 実績が無い時間帯を優先的に試す(探索の土台作り)
+      pick = untried[Math.floor(Math.random() * untried.length)];
+    } else if (Math.random() < EPSILON) {
+      pick = remaining[Math.floor(Math.random() * remaining.length)];
+    } else {
+      pick = remaining.reduce((best, s) => (avgImpressions(s) > avgImpressions(best) ? s : best), remaining[0]);
+    }
+    chosen.push(pick);
+    remaining.splice(remaining.indexOf(pick), 1);
+  }
+  return chosen.sort((a, b) => a - b);
+}
+
+function ensureTodaysPlan(state) {
+  const today = todayJst();
+  if (state.todaysPlan.date !== today) {
+    state.todaysPlan = { date: today, slots: buildTodaysPlan(state.slotStats) };
+    console.log(`本日の投稿予定時間帯(JST): ${state.todaysPlan.slots.join(', ')}時`);
+  }
+  return state.todaysPlan;
 }
 
 async function fetchYoutubeFeed() {
@@ -159,24 +216,81 @@ async function postTweet(text) {
   return apiPostJson(`${X_API_BASE}/tweets`, { text }, config.posterAccessToken, config.posterAccessSecret);
 }
 
+// 投稿から一定時間経過したツイートのインプレッション数を取得し、時間帯ごとの成績(slotStats)に反映する
+async function collectPendingMetrics(state) {
+  if (!state.pendingMetrics || state.pendingMetrics.length === 0) return;
+
+  const stillPending = [];
+  for (const entry of state.pendingMetrics) {
+    const hoursSincePost = (Date.now() - new Date(entry.postedAt).getTime()) / (60 * 60 * 1000);
+    if (hoursSincePost < METRICS_DELAY_HOURS) {
+      stillPending.push(entry);
+      continue;
+    }
+    if (hoursSincePost > METRICS_GIVEUP_HOURS) {
+      console.log(`ツイート${entry.tweetId}のインプレッション取得を断念(${METRICS_GIVEUP_HOURS}時間経過)`);
+      continue;
+    }
+    try {
+      const res = await apiGet(
+        `${X_API_BASE}/tweets/${entry.tweetId}`,
+        { 'tweet.fields': 'public_metrics' },
+        config.posterAccessToken,
+        config.posterAccessSecret
+      );
+      const impressions = res.data && res.data.public_metrics ? res.data.public_metrics.impression_count : undefined;
+      if (typeof impressions !== 'number') {
+        stillPending.push(entry); // まだ取得できない場合は次回リトライ
+        continue;
+      }
+      const slot = entry.slot;
+      const s = state.slotStats[slot] || { trials: 0, totalImpressions: 0 };
+      s.trials += 1;
+      s.totalImpressions += impressions;
+      state.slotStats[slot] = s;
+      console.log(`ツイート${entry.tweetId}(${slot}時台)のインプレッション: ${impressions}`);
+    } catch (err) {
+      console.error(`インプレッション取得エラー(${entry.tweetId}): ${err.message}`);
+      stillPending.push(entry);
+    }
+  }
+  state.pendingMetrics = stillPending;
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const state = loadState();
+
+  await collectPendingMetrics(state);
 
   const today = todayJst();
   if (state.dailyPostCount.date !== today) {
     state.dailyPostCount = { date: today, count: 0 };
   }
-  if (state.dailyPostCount.count >= MAX_POSTS_PER_DAY) {
-    console.log(`本日の投稿上限(${MAX_POSTS_PER_DAY}件)に達しているためスキップします。`);
-    return;
-  }
+
+  const plan = ensureTodaysPlan(state);
+  if (!plan.postedSlots) plan.postedSlots = [];
 
   const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
 
   const feed = await fetchYoutubeFeed();
   const latest = feed[0];
   const hasNewVideo = !!(latest && latest.videoId !== state.lastVideoId);
+
+  const currentSlot = currentHourJst();
+  const isPlannedSlot = plan.slots.includes(currentSlot) && !plan.postedSlots.includes(currentSlot);
+
+  if (!hasNewVideo && !isPlannedSlot) {
+    console.log(`${currentSlot}時は本日の投稿予定時間帯ではないためスキップします(予定: ${plan.slots.join(', ')}時)。`);
+    saveState(state); // メトリクス収集結果は保存する
+    return;
+  }
+
+  if (state.dailyPostCount.count >= MAX_POSTS_PER_DAY) {
+    console.log(`本日の投稿上限(${MAX_POSTS_PER_DAY}件)に達しているためスキップします。`);
+    saveState(state);
+    return;
+  }
 
   const categoryId = pickCategory(state.recentCategories, hasNewVideo);
   console.log(`選択されたカテゴリ: ${categoryId}`);
@@ -205,20 +319,28 @@ async function main() {
 
   if (!isValid(text)) {
     console.error('再生成後も条件を満たさないため、今回は投稿をスキップします。');
+    saveState(state);
     return;
   }
 
   if (dryRun) {
     console.log('(dry-run) 投稿はスキップしました。');
+    saveState(state); // メトリクス収集結果・当日プランは保存する(投稿カウント等は更新しない)
     return;
   }
 
-  await postTweet(text);
+  const posted = await postTweet(text);
   console.log('投稿しました。');
 
   state.recentCategories = [...(state.recentCategories || []), categoryId].slice(-5);
   if (categoryId === 'video_announcement') state.lastVideoId = latest.videoId;
   state.dailyPostCount.count += 1;
+  if (isPlannedSlot) plan.postedSlots.push(currentSlot);
+  state.pendingMetrics.push({
+    tweetId: posted.data.id,
+    slot: isPlannedSlot ? currentSlot : 'unplanned',
+    postedAt: new Date().toISOString(),
+  });
   saveState(state);
 }
 
