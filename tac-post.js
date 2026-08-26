@@ -30,6 +30,17 @@ const CATEGORIES = [
   { id: 'video_recap', label: '過去動画の要約・再紹介', weight: 2, needsSearch: false },
 ];
 
+// 投稿の「切り口・構成」のバリエーション。話題(CATEGORIES)とは独立した軸で、
+// どの切り口がインプレッションを稼ぎやすいかもε-greedyで学習していく。
+const FORMATS = [
+  { id: 'question_hook', label: '問いかけから始める', instruction: '冒頭を読者への問いかけ(「〜って知ってました?」等)から始めてください。' },
+  { id: 'surprising_fact', label: '意外な事実・数字から入る', instruction: '冒頭を意外性のある事実や数字から始めてください(創作せず、確認できる事実の範囲で)。' },
+  { id: 'story_lead', label: 'エピソード風', instruction: 'ちょっとした体験談・エピソードを語るような書き出しにしてください。' },
+  { id: 'listicle', label: '箇条書き整理風', instruction: '「ポイントは○つ」のように、要点を整理して伝える構成にしてください(絵文字の番号や記号を使ってもよい)。' },
+  { id: 'casual_chat', label: '雑談・つぶやき風', instruction: '独り言やつぶやきのような、力の抜けた自然な語り口にしてください。' },
+  { id: 'direct_tip', label: '結論ファースト', instruction: '結論やアドバイスを最初に言い切ってから、理由や補足を続ける構成にしてください。' },
+];
+
 // 断定的な投資助言・利回り保証と受け取られる表現(検出したら投稿しない)
 const BANNED_PATTERNS = [
   /絶対に?儲か/, /確実に儲か/, /必ず儲か/, /元本保証/, /損しない/,
@@ -43,6 +54,8 @@ function loadState() {
     lastVideoId: null,
     dailyPostCount: { date: null, count: 0 },
     slotStats: {},
+    formatStats: {},
+    recentFormats: [],
     todaysPlan: { date: null, slots: [] },
     pendingMetrics: [],
   };
@@ -117,6 +130,14 @@ async function fetchYoutubeFeed() {
   }).filter((v) => v.videoId && v.title);
 }
 
+// チャンネルにはFX・投資と無関係な動画(雑談・エンタメ系など)も混ざっているため、
+// 過去動画の再紹介ではタイトルにFX・投資関連キーワードを含むものだけを対象にする
+const FX_RELATED_KEYWORDS = ['FX', '為替', 'ドル', '円', 'トレード', 'チャート', '投資', '相場', 'テクニカル', '通貨', '口座', 'エントリー'];
+
+function filterFxRelated(videos) {
+  return videos.filter((v) => FX_RELATED_KEYWORDS.some((kw) => v.title.includes(kw)));
+}
+
 function pickCategory(recentCategories, hasNewVideo) {
   if (hasNewVideo) return 'video_announcement';
   const pool = CATEGORIES.filter((c) => !recentCategories.slice(-1).includes(c.id));
@@ -129,7 +150,28 @@ function pickCategory(recentCategories, hasNewVideo) {
   return pool[0].id;
 }
 
-function buildPrompt(categoryId, context) {
+// 投稿の切り口(FORMATS)をε-greedyで選ぶ。実績の良い切り口を優先しつつ、
+// 直近2回と同じ切り口は避けて、常にバリエーションが出るようにする。
+function pickFormat(formatStats, recentFormats) {
+  const pool = FORMATS.filter((f) => !(recentFormats || []).slice(-2).includes(f.id));
+
+  function avgImpressions(f) {
+    const s = formatStats[f.id];
+    if (!s || s.trials === 0) return null;
+    return s.totalImpressions / s.trials;
+  }
+
+  const untried = pool.filter((f) => avgImpressions(f) === null);
+  if (untried.length > 0) {
+    return untried[Math.floor(Math.random() * untried.length)].id;
+  }
+  if (Math.random() < EPSILON) {
+    return pool[Math.floor(Math.random() * pool.length)].id;
+  }
+  return pool.reduce((best, f) => (avgImpressions(f) > avgImpressions(best) ? f : best), pool[0]).id;
+}
+
+function buildPrompt(categoryId, context, formatId) {
   const base = `あなたはFX・投資系YouTubeチャンネル「TAC投資チャンネル」の公式X(Twitter)アカウント運用担当です。
 以下の制約を厳守して、日本語のツイート文を1つだけ生成してください。
 
@@ -162,10 +204,13 @@ URLやチャンネルへの誘導文は入れないでください(本文のみ)
 最後に必ずこのURLを含めてください: ${context.videoUrl}`,
   };
 
-  return base + '\n' + (perCategory[categoryId] || '');
+  const format = FORMATS.find((f) => f.id === formatId);
+  const formatInstruction = format ? `\n【今回の切り口】${format.instruction}` : '';
+
+  return base + '\n' + (perCategory[categoryId] || '') + formatInstruction;
 }
 
-async function generateTweet(categoryId, context, anthropic) {
+async function generateTweet(categoryId, context, formatId, anthropic) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
   const tools = category.needsSearch
     ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
@@ -174,7 +219,7 @@ async function generateTweet(categoryId, context, anthropic) {
   const response = await anthropic.messages.create({
     model: 'claude-opus-5',
     max_tokens: 1024,
-    system: buildPrompt(categoryId, context),
+    system: buildPrompt(categoryId, context, formatId),
     messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
     ...(tools ? { tools } : {}),
   });
@@ -248,7 +293,15 @@ async function collectPendingMetrics(state) {
       s.trials += 1;
       s.totalImpressions += impressions;
       state.slotStats[slot] = s;
-      console.log(`ツイート${entry.tweetId}(${slot}時台)のインプレッション: ${impressions}`);
+
+      if (entry.format) {
+        const fs2 = state.formatStats[entry.format] || { trials: 0, totalImpressions: 0 };
+        fs2.trials += 1;
+        fs2.totalImpressions += impressions;
+        state.formatStats[entry.format] = fs2;
+      }
+
+      console.log(`ツイート${entry.tweetId}(${slot}時台 / ${entry.format || '不明'})のインプレッション: ${impressions}`);
     } catch (err) {
       console.error(`インプレッション取得エラー(${entry.tweetId}): ${err.message}`);
       stillPending.push(entry);
@@ -293,27 +346,34 @@ async function main() {
   }
 
   const categoryId = pickCategory(state.recentCategories, hasNewVideo);
-  console.log(`選択されたカテゴリ: ${categoryId}`);
+  const formatId = pickFormat(state.formatStats, state.recentFormats);
+  console.log(`選択されたカテゴリ: ${categoryId} / 切り口: ${formatId}`);
 
   const context = {};
   if (categoryId === 'video_announcement') {
     context.videoTitle = latest.title;
     context.videoUrl = latest.url;
-  } else if (categoryId === 'video_recap' && feed.length > 0) {
-    const pick = feed[Math.floor(Math.random() * feed.length)];
-    context.videoTitle = pick.title;
+  } else if (categoryId === 'video_recap') {
+    const fxVideos = filterFxRelated(feed);
+    if (fxVideos.length > 0) {
+      context.videoTitle = fxVideos[Math.floor(Math.random() * fxVideos.length)].title;
+    }
+    // 該当がない場合はbuildPrompt側のデフォルトタイトルにフォールバックする
   }
+
+  const MIN_WEIGHTED_LENGTH = 40; // 極端に短い/空に近い生成結果(検証をすり抜けるゴミ出力)を弾く
 
   function isValid(t) {
-    return t.length > 0 && weightedTweetLength(t) <= MAX_WEIGHTED_LENGTH && !violatesBannedPatterns(t);
+    const w = weightedTweetLength(t);
+    return t.length > 0 && w >= MIN_WEIGHTED_LENGTH && w <= MAX_WEIGHTED_LENGTH && !violatesBannedPatterns(t);
   }
 
-  let text = await generateTweet(categoryId, context, anthropic);
+  let text = await generateTweet(categoryId, context, formatId, anthropic);
   console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
 
   if (!isValid(text)) {
     console.log('禁止表現または文字数超過を検出。再生成します。');
-    text = await generateTweet(categoryId, context, anthropic);
+    text = await generateTweet(categoryId, context, formatId, anthropic);
     console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
   }
 
@@ -333,12 +393,14 @@ async function main() {
   console.log('投稿しました。');
 
   state.recentCategories = [...(state.recentCategories || []), categoryId].slice(-5);
+  state.recentFormats = [...(state.recentFormats || []), formatId].slice(-5);
   if (categoryId === 'video_announcement') state.lastVideoId = latest.videoId;
   state.dailyPostCount.count += 1;
   if (isPlannedSlot) plan.postedSlots.push(currentSlot);
   state.pendingMetrics.push({
     tweetId: posted.data.id,
     slot: isPlannedSlot ? currentSlot : 'unplanned',
+    format: formatId,
     postedAt: new Date().toISOString(),
   });
   saveState(state);
