@@ -1,0 +1,228 @@
+// TAC_FXtrade 自動投稿ボット
+// Claude APIで投稿文を生成し、そのままXに投稿する(完全自動)。
+// 使い方:
+//   node tac-post.js --dry-run   生成のみ行い、投稿はしない(動作確認用)
+//   node tac-post.js             実際に投稿する
+
+const fs = require('fs');
+const path = require('path');
+const Anthropic = require('@anthropic-ai/sdk');
+const { apiPostJson, loadConfig } = require('./oauth-lib');
+
+const config = loadConfig();
+const STATE_FILE = path.join(__dirname, 'state.json');
+const X_API_BASE = 'https://api.twitter.com/2';
+
+// 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁)
+const MAX_POSTS_PER_DAY = 3;
+
+const CATEGORIES = [
+  { id: 'market_news', label: '市場ニュース・相場コメント', weight: 3, needsSearch: true },
+  { id: 'fx_basics', label: 'FX・為替の基礎知識/豆知識', weight: 3, needsSearch: false },
+  { id: 'celebrity_story', label: '芸能人の投資・お金にまつわるエピソード', weight: 1, needsSearch: true },
+  { id: 'video_recap', label: '過去動画の要約・再紹介', weight: 2, needsSearch: false },
+];
+
+// 断定的な投資助言・利回り保証と受け取られる表現(検出したら投稿しない)
+const BANNED_PATTERNS = [
+  /絶対に?儲か/, /確実に儲か/, /必ず儲か/, /元本保証/, /損しない/,
+  /必ず勝て/, /100%/, /ノーリスク/, /絶対に?上が/, /絶対に?下が/,
+  /今すぐ買う?べき/, /今すぐ売る?べき/,
+];
+
+function loadState() {
+  if (!fs.existsSync(STATE_FILE)) {
+    return { recentCategories: [], lastVideoId: null, dailyPostCount: { date: null, count: 0 } };
+  }
+  return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+}
+
+function saveState(state) {
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function todayJst() {
+  const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+
+async function fetchYoutubeFeed() {
+  const channelId = config.youtubeChannelId;
+  if (!channelId) return [];
+  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  if (!res.ok) return [];
+  const xml = await res.text();
+  const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => m[1]);
+  return entries.map((entry) => {
+    const videoId = (entry.match(/<yt:videoId>(.*?)<\/yt:videoId>/) || [])[1];
+    const title = (entry.match(/<title>(.*?)<\/title>/) || [])[1];
+    return { videoId, title, url: `https://www.youtube.com/watch?v=${videoId}` };
+  }).filter((v) => v.videoId && v.title);
+}
+
+function pickCategory(recentCategories, hasNewVideo) {
+  if (hasNewVideo) return 'video_announcement';
+  const pool = CATEGORIES.filter((c) => !recentCategories.slice(-1).includes(c.id));
+  const total = pool.reduce((sum, c) => sum + c.weight, 0);
+  let r = Math.random() * total;
+  for (const c of pool) {
+    if (r < c.weight) return c.id;
+    r -= c.weight;
+  }
+  return pool[0].id;
+}
+
+function buildPrompt(categoryId, context) {
+  const base = `あなたはFX・投資系YouTubeチャンネル「TAC投資チャンネル」の公式X(Twitter)アカウント運用担当です。
+以下の制約を厳守して、日本語のツイート文を1つだけ生成してください。
+
+【文体】
+- カジュアルで親しみやすい口調(堅すぎる敬語や専門用語の羅列は避ける)
+- 絵文字は多用しすぎない(0〜2個程度)
+
+【厳守事項】
+- 本文は全角100〜120文字程度を目安にする(URLを含める場合、URLは文字数にほぼ影響しないので本文はこの目安のままでよい)
+- 「絶対」「確実に儲かる」「元本保証」「必ず勝てる」など、断定的な投資助言・利回り保証と受け取られる表現は一切使わない
+- 特定の売買を推奨する表現(「今すぐ買うべき」等)は使わない
+- 事実に基づかない具体的な数値(価格・指標の値など)を創作しない。不確かな場合は数値を出さずに一般的な言及にとどめる
+- 出力はツイート本文のみ。説明や前置き、引用符は不要`;
+
+  const perCategory = {
+    market_news: `
+【今回のテーマ】直近の為替・金融市場に関する時事ネタや、経済指標・要人発言についてのコメント。
+必要であればWeb検索ツールで直近の実際のニュースを確認し、それに基づいて書いてください。検索結果が得られない場合は、特定の数値や断定を避け、一般的な視点・考え方の話に切り替えてください。`,
+    fx_basics: `
+【今回のテーマ】FX・為替に関する基礎知識や豆知識を、初心者にも分かりやすく1つ紹介してください。`,
+    celebrity_story: `
+【今回のテーマ】芸能人・著名人の投資やお金にまつわる、広く報道された事実に基づくエピソードを1つ紹介してください。
+必ずWeb検索ツールで事実関係を確認してから書いてください。裏取りできない噂話や未確認情報は扱わないこと。個人への誹謗中傷や決めつけにならないよう、事実の紹介にとどめ、断定的な評価は避けてください。`,
+    video_recap: `
+【今回のテーマ】以下のチャンネル過去動画を、見ていない人が興味を持つように、ネタバレしすぎない範囲で軽く紹介してください。動画タイトル: 「${context.videoTitle || 'FX初心者向け解説動画'}」
+URLやチャンネルへの誘導文は入れないでください(本文のみ)。`,
+    video_announcement: `
+【今回のテーマ】YouTubeチャンネルに新しい動画がアップされました。視聴を呼びかける告知ツイートを書いてください。
+動画タイトル: 「${context.videoTitle}」
+最後に必ずこのURLを含めてください: ${context.videoUrl}`,
+  };
+
+  return base + '\n' + (perCategory[categoryId] || '');
+}
+
+async function generateTweet(categoryId, context, anthropic) {
+  const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
+  const tools = category.needsSearch
+    ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
+    : undefined;
+
+  const response = await anthropic.messages.create({
+    model: 'claude-opus-5',
+    max_tokens: 1024,
+    system: buildPrompt(categoryId, context),
+    messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
+    ...(tools ? { tools } : {}),
+  });
+
+  // ツール使用時、ツール呼び出し前の前置きテキストブロックが混ざることがあるため、
+  // 最後のテキストブロック(最終回答)のみを採用する
+  const textBlocks = response.content.filter((b) => b.type === 'text').map((b) => b.text.trim());
+  return (textBlocks[textBlocks.length - 1] || '').trim();
+}
+
+function violatesBannedPatterns(text) {
+  return BANNED_PATTERNS.some((re) => re.test(text));
+}
+
+// Xの実際の文字数カウント方式に合わせた重み付き長さ計算。
+// URLは実際の文字数に関わらず一律23文字換算、全角相当の文字は2、それ以外は1として数える。
+const URL_REGEX = /https?:\/\/\S+/g;
+const TWITTER_URL_WEIGHT = 23;
+const MAX_WEIGHTED_LENGTH = 270; // 280の公式上限に対して安全マージンを確保
+
+function weightedTweetLength(text) {
+  const urlCount = (text.match(URL_REGEX) || []).length;
+  const withoutUrls = text.replace(URL_REGEX, '');
+  let weight = urlCount * TWITTER_URL_WEIGHT;
+  for (const ch of withoutUrls) {
+    const code = ch.codePointAt(0);
+    const isNarrow =
+      code <= 0x10ff ||
+      (code >= 0x2000 && code <= 0x200d) ||
+      (code >= 0x2010 && code <= 0x201f) ||
+      code === 0x2032 ||
+      code === 0x2033;
+    weight += isNarrow ? 1 : 2;
+  }
+  return weight;
+}
+
+async function postTweet(text) {
+  return apiPostJson(`${X_API_BASE}/tweets`, { text }, config.posterAccessToken, config.posterAccessSecret);
+}
+
+async function main() {
+  const dryRun = process.argv.includes('--dry-run');
+  const state = loadState();
+
+  const today = todayJst();
+  if (state.dailyPostCount.date !== today) {
+    state.dailyPostCount = { date: today, count: 0 };
+  }
+  if (state.dailyPostCount.count >= MAX_POSTS_PER_DAY) {
+    console.log(`本日の投稿上限(${MAX_POSTS_PER_DAY}件)に達しているためスキップします。`);
+    return;
+  }
+
+  const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
+
+  const feed = await fetchYoutubeFeed();
+  const latest = feed[0];
+  const hasNewVideo = !!(latest && latest.videoId !== state.lastVideoId);
+
+  const categoryId = pickCategory(state.recentCategories, hasNewVideo);
+  console.log(`選択されたカテゴリ: ${categoryId}`);
+
+  const context = {};
+  if (categoryId === 'video_announcement') {
+    context.videoTitle = latest.title;
+    context.videoUrl = latest.url;
+  } else if (categoryId === 'video_recap' && feed.length > 0) {
+    const pick = feed[Math.floor(Math.random() * feed.length)];
+    context.videoTitle = pick.title;
+  }
+
+  function isValid(t) {
+    return t.length > 0 && weightedTweetLength(t) <= MAX_WEIGHTED_LENGTH && !violatesBannedPatterns(t);
+  }
+
+  let text = await generateTweet(categoryId, context, anthropic);
+  console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
+
+  if (!isValid(text)) {
+    console.log('禁止表現または文字数超過を検出。再生成します。');
+    text = await generateTweet(categoryId, context, anthropic);
+    console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
+  }
+
+  if (!isValid(text)) {
+    console.error('再生成後も条件を満たさないため、今回は投稿をスキップします。');
+    return;
+  }
+
+  if (dryRun) {
+    console.log('(dry-run) 投稿はスキップしました。');
+    return;
+  }
+
+  await postTweet(text);
+  console.log('投稿しました。');
+
+  state.recentCategories = [...(state.recentCategories || []), categoryId].slice(-5);
+  if (categoryId === 'video_announcement') state.lastVideoId = latest.videoId;
+  state.dailyPostCount.count += 1;
+  saveState(state);
+}
+
+main().catch((err) => {
+  console.error('エラー:', err.message);
+  process.exit(1);
+});
