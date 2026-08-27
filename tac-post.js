@@ -23,6 +23,11 @@ const EPSILON = 0.25; // この確率でランダムな(まだ実績の薄い)�
 const METRICS_DELAY_HOURS = 24; // 投稿からこれだけ経過したらインプレッションを取得
 const METRICS_GIVEUP_HOURS = 24 * 4; // これ以上経っても取得できなければ諦める
 
+// 短文パンチライン用の「今伸びているFX/金融ジャンルのツイート」分析キャッシュ
+// (X検索APIは有料なので、punchline選定時だけ・数日おきの更新に留めてコストを抑える)
+const TREND_CACHE_VALID_DAYS = 3;
+const TREND_SEARCH_QUERY = '(FX OR 為替 OR ドル円 OR 投資 OR トレード) lang:ja -is:retweet -is:reply';
+
 const CATEGORIES = [
   { id: 'market_news', label: '市場ニュース・相場コメント', weight: 3, needsSearch: true },
   { id: 'fx_basics', label: 'FX・為替の基礎知識/豆知識', weight: 3, needsSearch: false },
@@ -59,6 +64,7 @@ function loadState() {
     recentFormats: [],
     todaysPlan: { date: null, slots: [] },
     pendingMetrics: [],
+    trendCache: { date: null, examples: [] },
   };
   if (!fs.existsSync(STATE_FILE)) return defaults;
   return { ...defaults, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
@@ -139,6 +145,46 @@ function filterFxRelated(videos) {
   return videos.filter((v) => FX_RELATED_KEYWORDS.some((kw) => v.title.includes(kw)));
 }
 
+// Xの検索APIで「今のFX/金融ジャンルで伸びているツイート」を取得し、
+// いいね+リツイート数の合計が多い順に上位を返す
+async function fetchTrendingFxTweets() {
+  try {
+    const res = await apiGet(
+      `${X_API_BASE}/tweets/search/recent`,
+      { query: TREND_SEARCH_QUERY, max_results: '10', 'tweet.fields': 'public_metrics' },
+      config.posterAccessToken,
+      config.posterAccessSecret
+    );
+    const tweets = res.data || [];
+    return tweets
+      .map((t) => ({
+        text: t.text,
+        engagement: (t.public_metrics.like_count || 0) + (t.public_metrics.retweet_count || 0),
+      }))
+      .sort((a, b) => b.engagement - a.engagement)
+      .slice(0, 5);
+  } catch (err) {
+    console.error(`トレンド分析用のツイート検索に失敗: ${err.message}`);
+    return [];
+  }
+}
+
+async function ensureTrendCache(state) {
+  const today = todayJst();
+  const cacheDate = state.trendCache.date;
+  const daysSinceCache = cacheDate
+    ? (new Date(today) - new Date(cacheDate)) / (24 * 60 * 60 * 1000)
+    : Infinity;
+  if (daysSinceCache < TREND_CACHE_VALID_DAYS) return state.trendCache.examples;
+
+  const examples = await fetchTrendingFxTweets();
+  if (examples.length > 0) {
+    state.trendCache = { date: today, examples };
+    console.log(`トレンド分析キャッシュを更新しました(${examples.length}件)`);
+  }
+  return state.trendCache.examples;
+}
+
 function pickCategory(recentCategories, hasNewVideo) {
   if (hasNewVideo) return 'video_announcement';
   const pool = CATEGORIES.filter((c) => !recentCategories.slice(-1).includes(c.id));
@@ -172,7 +218,7 @@ function pickFormat(formatStats, recentFormats) {
   return pool.reduce((best, f) => (avgImpressions(f) > avgImpressions(best) ? f : best), pool[0]).id;
 }
 
-function buildPrompt(categoryId, context, formatId) {
+function buildPrompt(categoryId, context, formatId, trendExamples) {
   const base = `あなたはFX・投資系YouTubeチャンネル「TAC投資チャンネル」の公式X(Twitter)アカウント運用担当です。
 以下の制約を厳守して、日本語のツイート文を1つだけ生成してください。
 
@@ -208,10 +254,19 @@ URLやチャンネルへの誘導文は入れないでください(本文のみ)
   const format = FORMATS.find((f) => f.id === formatId);
   const formatInstruction = format ? `\n【今回の切り口】${format.instruction}` : '';
 
-  return base + '\n' + (perCategory[categoryId] || '') + formatInstruction;
+  let trendSection = '';
+  if (trendExamples && trendExamples.length > 0) {
+    const list = trendExamples.map((e, i) => `${i + 1}. 「${e.text.replace(/\n/g, ' ')}」`).join('\n');
+    trendSection = `
+【参考】今、X上でFX/金融ジャンルで反応が多いツイートの例です:
+${list}
+これらの文章や表現をそのままコピーせず、なぜ反応を得られていそうか(切り口・テンポ・共感ポイントなど)を分析し、その学びだけを今回の投稿に活かしてください。`;
+  }
+
+  return base + '\n' + (perCategory[categoryId] || '') + formatInstruction + trendSection;
 }
 
-async function generateTweet(categoryId, context, formatId, anthropic) {
+async function generateTweet(categoryId, context, formatId, trendExamples, anthropic) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
   const tools = category.needsSearch
     ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
@@ -220,7 +275,7 @@ async function generateTweet(categoryId, context, formatId, anthropic) {
   const response = await anthropic.messages.create({
     model: 'claude-opus-5',
     max_tokens: 1024,
-    system: buildPrompt(categoryId, context, formatId),
+    system: buildPrompt(categoryId, context, formatId, trendExamples),
     messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
     ...(tools ? { tools } : {}),
   });
@@ -369,12 +424,15 @@ async function main() {
     return t.length > 0 && w >= MIN_WEIGHTED_LENGTH && w <= MAX_WEIGHTED_LENGTH && !violatesBannedPatterns(t);
   }
 
-  let text = await generateTweet(categoryId, context, formatId, anthropic);
+  // 短文パンチラインの時だけ、実際に伸びているFX/金融ジャンルのツイートを分析材料にする
+  const trendExamples = formatId === 'punchline' ? await ensureTrendCache(state) : [];
+
+  let text = await generateTweet(categoryId, context, formatId, trendExamples, anthropic);
   console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
 
   if (!isValid(text)) {
     console.log('禁止表現または文字数超過を検出。再生成します。');
-    text = await generateTweet(categoryId, context, formatId, anthropic);
+    text = await generateTweet(categoryId, context, formatId, trendExamples, anthropic);
     console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
   }
 
