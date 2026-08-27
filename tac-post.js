@@ -387,10 +387,13 @@ async function main() {
   const hasNewVideo = !!(latest && latest.videoId !== state.lastVideoId);
 
   const currentSlot = currentHourJst();
-  const isPlannedSlot = plan.slots.includes(currentSlot) && !plan.postedSlots.includes(currentSlot);
+  // GitHub Actionsのスケジュール実行は数十分〜数時間遅れることがあるため、
+  // 「ちょうど今の時刻」ではなく「もう時刻が来ていて、まだ消化していない最も早い枠」を拾う
+  const dueSlot = plan.slots.find((s) => s <= currentSlot && !plan.postedSlots.includes(s));
+  const isPlannedSlot = dueSlot !== undefined;
 
   if (!hasNewVideo && !isPlannedSlot) {
-    console.log(`${currentSlot}時は本日の投稿予定時間帯ではないためスキップします(予定: ${plan.slots.join(', ')}時)。`);
+    console.log(`${currentSlot}時: 消化すべき予定枠がないためスキップします(予定: ${plan.slots.join(', ')}時、消化済み: ${plan.postedSlots.join(', ') || 'なし'})。`);
     saveState(state); // メトリクス収集結果は保存する
     return;
   }
@@ -455,10 +458,10 @@ async function main() {
   state.recentFormats = [...(state.recentFormats || []), formatId].slice(-5);
   if (categoryId === 'video_announcement') state.lastVideoId = latest.videoId;
   state.dailyPostCount.count += 1;
-  if (isPlannedSlot) plan.postedSlots.push(currentSlot);
+  if (isPlannedSlot) plan.postedSlots.push(dueSlot);
   state.pendingMetrics.push({
     tweetId: posted.data.id,
-    slot: isPlannedSlot ? currentSlot : 'unplanned',
+    slot: isPlannedSlot ? dueSlot : 'unplanned',
     format: formatId,
     postedAt: new Date().toISOString(),
   });
