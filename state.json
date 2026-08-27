@@ -1,24 +1,36 @@
 {
   "recentCategories": [
-    "video_announcement"
+    "video_announcement",
+    "fx_basics"
   ],
   "lastVideoId": "0yuVXkAqQo0",
   "dailyPostCount": {
     "date": "2026-08-27",
-    "count": 1
+    "count": 2
   },
   "slotStats": {},
   "formatStats": {},
-  "recentFormats": [],
+  "recentFormats": [
+    "question_hook"
+  ],
   "todaysPlan": {
     "date": "2026-08-27",
     "slots": [
       10,
       22
     ],
-    "postedSlots": []
+    "postedSlots": [
+      10
+    ]
   },
-  "pendingMetrics": [],
+  "pendingMetrics": [
+    {
+      "tweetId": "2092989869203357723",
+      "slot": 10,
+      "format": "question_hook",
+      "postedAt": "2026-08-27T14:57:25.471Z"
+    }
+  ],
   "trendCache": {
     "date": null,
     "examples": []
