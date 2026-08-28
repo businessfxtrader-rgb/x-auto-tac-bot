@@ -6,32 +6,34 @@
   ],
   "lastVideoId": "0yuVXkAqQo0",
   "dailyPostCount": {
-    "date": "2026-08-28",
-    "count": 1
+    "date": "2026-08-29",
+    "count": 0
   },
-  "slotStats": {},
-  "formatStats": {},
+  "slotStats": {
+    "10": {
+      "trials": 1,
+      "totalImpressions": 107
+    }
+  },
+  "formatStats": {
+    "question_hook": {
+      "trials": 1,
+      "totalImpressions": 107
+    }
+  },
   "recentFormats": [
     "question_hook",
     "listicle"
   ],
   "todaysPlan": {
-    "date": "2026-08-28",
+    "date": "2026-08-29",
     "slots": [
       450,
       1140
     ],
-    "postedSlots": [
-      450
-    ]
+    "postedSlots": []
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2092989869203357723",
-      "slot": 10,
-      "format": "question_hook",
-      "postedAt": "2026-08-27T14:57:25.471Z"
-    },
     {
       "tweetId": "2093201574239862931",
       "slot": 450,
@@ -39,6 +41,14 @@
       "postedAt": "2026-08-28T04:58:39.881Z"
     }
   ],
+  "fxTrendCache": {
+    "date": null,
+    "examples": []
+  },
+  "viralTrendCache": {
+    "date": null,
+    "examples": []
+  },
   "trendCache": {
     "date": null,
     "examples": []
