@@ -2,9 +2,9 @@ name: TAC Auto Post
 
 on:
   schedule:
-    # 候補時間帯: 7,10,13,16,19,22時 JST (UTC+9) → UTC 22,1,4,7,10,13時
-    # 実際に投稿するのは1日2回分のみ(tac-post.js側でA/Bテスト選定・スキップ判定を行う)
-    - cron: '0 22,1,4,7,10,13 * * *'
+    # 固定2枠: 7:30 JST と 19:00 JST (UTC+9) → UTC 22:30(前日) と UTC 10:00
+    - cron: '30 22 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 permissions:

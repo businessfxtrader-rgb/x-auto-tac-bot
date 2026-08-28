@@ -16,10 +16,16 @@ const X_API_BASE = 'https://api.twitter.com/2';
 // 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁)
 const MAX_POSTS_PER_DAY = 3;
 
-// 投稿時間帯のA/Bテスト設定
-const CANDIDATE_SLOTS_JST = [7, 10, 13, 16, 19, 22];
+// 投稿時間帯(JST、分単位で表現。固定2枠: 7:30 と 19:00)
+const CANDIDATE_SLOTS_JST = [7 * 60 + 30, 19 * 60];
 const POSTS_PER_DAY_TARGET = 2;
-const EPSILON = 0.25; // この確率でランダムな(まだ実績の薄い)時間帯を試す
+const EPSILON = 0.25; // 切り口(FORMATS)選定でこの確率でランダムな(まだ実績の薄い)ものを試す
+
+function formatSlot(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
 const METRICS_DELAY_HOURS = 24; // 投稿からこれだけ経過したらインプレッションを取得
 const METRICS_GIVEUP_HOURS = 24 * 4; // これ以上経っても取得できなければ諦める
 
@@ -82,8 +88,9 @@ function todayJst() {
   return nowJst().toISOString().slice(0, 10);
 }
 
-function currentHourJst() {
-  return nowJst().getUTCHours();
+function currentSlotMinutesJst() {
+  const d = nowJst();
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
 // 今日投稿する時間帯を、実績に基づくε-greedy方式で選ぶ(1日1回だけ計算し、当日はstateに固定する)
@@ -118,7 +125,7 @@ function ensureTodaysPlan(state) {
   const today = todayJst();
   if (state.todaysPlan.date !== today) {
     state.todaysPlan = { date: today, slots: buildTodaysPlan(state.slotStats) };
-    console.log(`本日の投稿予定時間帯(JST): ${state.todaysPlan.slots.join(', ')}時`);
+    console.log(`本日の投稿予定時間帯(JST): ${state.todaysPlan.slots.map(formatSlot).join(', ')}`);
   }
   return state.todaysPlan;
 }
@@ -357,7 +364,8 @@ async function collectPendingMetrics(state) {
         state.formatStats[entry.format] = fs2;
       }
 
-      console.log(`ツイート${entry.tweetId}(${slot}時台 / ${entry.format || '不明'})のインプレッション: ${impressions}`);
+      const slotLabel = typeof slot === 'number' ? formatSlot(slot) : slot;
+      console.log(`ツイート${entry.tweetId}(${slotLabel} / ${entry.format || '不明'})のインプレッション: ${impressions}`);
     } catch (err) {
       console.error(`インプレッション取得エラー(${entry.tweetId}): ${err.message}`);
       stillPending.push(entry);
@@ -386,14 +394,14 @@ async function main() {
   const latest = feed[0];
   const hasNewVideo = !!(latest && latest.videoId !== state.lastVideoId);
 
-  const currentSlot = currentHourJst();
+  const currentSlot = currentSlotMinutesJst();
   // GitHub Actionsのスケジュール実行は数十分〜数時間遅れることがあるため、
   // 「ちょうど今の時刻」ではなく「もう時刻が来ていて、まだ消化していない最も早い枠」を拾う
   const dueSlot = plan.slots.find((s) => s <= currentSlot && !plan.postedSlots.includes(s));
   const isPlannedSlot = dueSlot !== undefined;
 
   if (!hasNewVideo && !isPlannedSlot) {
-    console.log(`${currentSlot}時: 消化すべき予定枠がないためスキップします(予定: ${plan.slots.join(', ')}時、消化済み: ${plan.postedSlots.join(', ') || 'なし'})。`);
+    console.log(`${formatSlot(currentSlot)}: 消化すべき予定枠がないためスキップします(予定: ${plan.slots.map(formatSlot).join(', ')}、消化済み: ${plan.postedSlots.map(formatSlot).join(', ') || 'なし'})。`);
     saveState(state); // メトリクス収集結果は保存する
     return;
   }
