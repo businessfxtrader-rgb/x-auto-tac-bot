@@ -29,14 +29,13 @@ function formatSlot(minutes) {
 const METRICS_DELAY_HOURS = 24; // 投稿からこれだけ経過したらインプレッションを取得
 const METRICS_GIVEUP_HOURS = 24 * 4; // これ以上経っても取得できなければ諦める
 
-// 「今伸びているツイート」「自分の過去ツイート」の分析キャッシュ設定
+// 「今伸びているツイート」の分析キャッシュ設定
 // (X検索APIは有料なので、数日おきの更新に留めてコストを抑える。使う頻度が上がってもキャッシュのおかげでコストは増えない)
 const TREND_CACHE_VALID_DAYS = 3;
 const FX_TREND_SEARCH_QUERY = '(FX OR 為替 OR ドル円 OR 投資 OR トレード) lang:ja -is:retweet -is:reply';
 // min_faves等のエンゲージメント演算子はPay-Per-Useプランでは使用不可のため、
 // 共感・バズ系ツイートに出やすいキーワードで代用する
 const VIRAL_TREND_SEARCH_QUERY = '(あるある OR わかる OR 共感 OR これは伸びる) lang:ja -is:retweet -is:reply';
-const OWN_TWEETS_CACHE_VALID_DAYS = 7;
 
 const CATEGORIES = [
   { id: 'market_news', label: '市場ニュース・相場コメント', weight: 3, needsSearch: true },
@@ -76,7 +75,6 @@ function loadState() {
     pendingMetrics: [],
     fxTrendCache: { date: null, examples: [] },
     viralTrendCache: { date: null, examples: [] },
-    ownTweetsCache: { date: null, examples: [] },
   };
   if (!fs.existsSync(STATE_FILE)) return defaults;
   return { ...defaults, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
@@ -181,24 +179,6 @@ async function fetchTweetsBySearch(query) {
   }
 }
 
-// TAC_FXtrade自身の過去ツイートを取得する(owned readなので低コスト)
-async function fetchOwnRecentTweets() {
-  try {
-    const userId = config.posterAccessToken.split('-')[0];
-    const res = await apiGet(
-      `${X_API_BASE}/users/${userId}/tweets`,
-      { max_results: '10', exclude: 'replies,retweets', 'tweet.fields': 'public_metrics' },
-      config.posterAccessToken,
-      config.posterAccessSecret
-    );
-    const tweets = res.data || [];
-    return tweets.map((t) => ({ text: t.text }));
-  } catch (err) {
-    console.error(`自分の過去ツイート取得に失敗: ${err.message}`);
-    return [];
-  }
-}
-
 // 汎用のキャッシュ更新ヘルパー(dateフィールドとexamplesフィールドを持つキャッシュオブジェクトを更新する)
 async function ensureCache(state, cacheKey, validDays, fetcher, label) {
   const today = todayJst();
@@ -253,7 +233,7 @@ function exampleList(examples) {
   return examples.map((e, i) => `${i + 1}. 「${e.text.replace(/\n/g, ' ')}」`).join('\n');
 }
 
-function buildPrompt(categoryId, context, formatId, trendExamples, viralExamples, ownExamples) {
+function buildPrompt(categoryId, context, formatId, trendExamples, viralExamples) {
   const base = `あなたはFX・投資系YouTubeチャンネル「TAC投資チャンネル」の公式X(Twitter)アカウント運用担当です。
 以下の制約を厳守して、日本語のツイート文を1つだけ生成してください。
 
@@ -311,20 +291,17 @@ URLやチャンネルへの誘導文は入れないでください(本文のみ)
   if (viralExamples && viralExamples.length > 0) {
     refParts.push(`ジャンルを問わず今バズっているツイートの例(文体・テンポの参考):\n${exampleList(viralExamples)}`);
   }
-  if (ownExamples && ownExamples.length > 0) {
-    refParts.push(`このアカウント自身の過去の投稿例(口調・雰囲気を保つための参考):\n${exampleList(ownExamples)}`);
-  }
   if (refParts.length > 0) {
     referenceSection = `
 【参考ツイート】
 ${refParts.join('\n\n')}
-これらの文章や表現をそのままコピーせず、なぜ反応を得られていそうか(切り口・テンポ・共感ポイントなど)や、このアカウントらしい口調を分析し、その学びだけを今回の投稿に活かしてください。`;
+これらの文章や表現をそのままコピーせず、なぜ反応を得られていそうか(切り口・テンポ・共感ポイントなど)を分析し、その学びだけを今回の投稿に活かしてください。`;
   }
 
   return base + '\n' + (perCategory[categoryId] || '') + formatInstruction + referenceSection;
 }
 
-async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic) {
+async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
   const tools = category.needsSearch
     ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
@@ -333,7 +310,7 @@ async function generateTweet(categoryId, context, formatId, trendExamples, viral
   const response = await anthropic.messages.create({
     model: 'claude-opus-5',
     max_tokens: 1024,
-    system: buildPrompt(categoryId, context, formatId, trendExamples, viralExamples, ownExamples),
+    system: buildPrompt(categoryId, context, formatId, trendExamples, viralExamples),
     messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
     ...(tools ? { tools } : {}),
   });
@@ -490,14 +467,13 @@ async function main() {
   // (すべてキャッシュ済みなので、毎回参照してもコストはほぼ増えない)
   const trendExamples = await ensureCache(state, 'fxTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(FX_TREND_SEARCH_QUERY), 'FXトレンド分析');
   const viralExamples = await ensureCache(state, 'viralTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(VIRAL_TREND_SEARCH_QUERY), 'バズツイート分析');
-  const ownExamples = await ensureCache(state, 'ownTweetsCache', OWN_TWEETS_CACHE_VALID_DAYS, fetchOwnRecentTweets, '自分の過去ツイート');
 
-  let text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic);
+  let text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic);
   console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
 
   if (!isValid(text)) {
     console.log('禁止表現または文字数超過を検出。再生成します。');
-    text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic);
+    text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic);
     console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
   }
 
