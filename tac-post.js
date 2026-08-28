@@ -29,10 +29,14 @@ function formatSlot(minutes) {
 const METRICS_DELAY_HOURS = 24; // 投稿からこれだけ経過したらインプレッションを取得
 const METRICS_GIVEUP_HOURS = 24 * 4; // これ以上経っても取得できなければ諦める
 
-// 短文パンチライン用の「今伸びているFX/金融ジャンルのツイート」分析キャッシュ
-// (X検索APIは有料なので、punchline選定時だけ・数日おきの更新に留めてコストを抑える)
+// 「今伸びているツイート」「自分の過去ツイート」の分析キャッシュ設定
+// (X検索APIは有料なので、数日おきの更新に留めてコストを抑える。使う頻度が上がってもキャッシュのおかげでコストは増えない)
 const TREND_CACHE_VALID_DAYS = 3;
-const TREND_SEARCH_QUERY = '(FX OR 為替 OR ドル円 OR 投資 OR トレード) lang:ja -is:retweet -is:reply';
+const FX_TREND_SEARCH_QUERY = '(FX OR 為替 OR ドル円 OR 投資 OR トレード) lang:ja -is:retweet -is:reply';
+// min_faves等のエンゲージメント演算子はPay-Per-Useプランでは使用不可のため、
+// 共感・バズ系ツイートに出やすいキーワードで代用する
+const VIRAL_TREND_SEARCH_QUERY = '(あるある OR わかる OR 共感 OR これは伸びる) lang:ja -is:retweet -is:reply';
+const OWN_TWEETS_CACHE_VALID_DAYS = 7;
 
 const CATEGORIES = [
   { id: 'market_news', label: '市場ニュース・相場コメント', weight: 3, needsSearch: true },
@@ -70,7 +74,9 @@ function loadState() {
     recentFormats: [],
     todaysPlan: { date: null, slots: [] },
     pendingMetrics: [],
-    trendCache: { date: null, examples: [] },
+    fxTrendCache: { date: null, examples: [] },
+    viralTrendCache: { date: null, examples: [] },
+    ownTweetsCache: { date: null, examples: [] },
   };
   if (!fs.existsSync(STATE_FILE)) return defaults;
   return { ...defaults, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
@@ -152,13 +158,12 @@ function filterFxRelated(videos) {
   return videos.filter((v) => FX_RELATED_KEYWORDS.some((kw) => v.title.includes(kw)));
 }
 
-// Xの検索APIで「今のFX/金融ジャンルで伸びているツイート」を取得し、
-// いいね+リツイート数の合計が多い順に上位を返す
-async function fetchTrendingFxTweets() {
+// Xの検索APIで指定クエリのツイートを取得し、いいね+リツイート数の合計が多い順に上位を返す
+async function fetchTweetsBySearch(query) {
   try {
     const res = await apiGet(
       `${X_API_BASE}/tweets/search/recent`,
-      { query: TREND_SEARCH_QUERY, max_results: '10', 'tweet.fields': 'public_metrics' },
+      { query, max_results: '10', 'tweet.fields': 'public_metrics' },
       config.posterAccessToken,
       config.posterAccessSecret
     );
@@ -171,25 +176,44 @@ async function fetchTrendingFxTweets() {
       .sort((a, b) => b.engagement - a.engagement)
       .slice(0, 5);
   } catch (err) {
-    console.error(`トレンド分析用のツイート検索に失敗: ${err.message}`);
+    console.error(`ツイート検索に失敗(${query}): ${err.message}`);
     return [];
   }
 }
 
-async function ensureTrendCache(state) {
-  const today = todayJst();
-  const cacheDate = state.trendCache.date;
-  const daysSinceCache = cacheDate
-    ? (new Date(today) - new Date(cacheDate)) / (24 * 60 * 60 * 1000)
-    : Infinity;
-  if (daysSinceCache < TREND_CACHE_VALID_DAYS) return state.trendCache.examples;
-
-  const examples = await fetchTrendingFxTweets();
-  if (examples.length > 0) {
-    state.trendCache = { date: today, examples };
-    console.log(`トレンド分析キャッシュを更新しました(${examples.length}件)`);
+// TAC_FXtrade自身の過去ツイートを取得する(owned readなので低コスト)
+async function fetchOwnRecentTweets() {
+  try {
+    const userId = config.posterAccessToken.split('-')[0];
+    const res = await apiGet(
+      `${X_API_BASE}/users/${userId}/tweets`,
+      { max_results: '10', exclude: 'replies,retweets', 'tweet.fields': 'public_metrics' },
+      config.posterAccessToken,
+      config.posterAccessSecret
+    );
+    const tweets = res.data || [];
+    return tweets.map((t) => ({ text: t.text }));
+  } catch (err) {
+    console.error(`自分の過去ツイート取得に失敗: ${err.message}`);
+    return [];
   }
-  return state.trendCache.examples;
+}
+
+// 汎用のキャッシュ更新ヘルパー(dateフィールドとexamplesフィールドを持つキャッシュオブジェクトを更新する)
+async function ensureCache(state, cacheKey, validDays, fetcher, label) {
+  const today = todayJst();
+  const cache = state[cacheKey];
+  const daysSinceCache = cache.date
+    ? (new Date(today) - new Date(cache.date)) / (24 * 60 * 60 * 1000)
+    : Infinity;
+  if (daysSinceCache < validDays) return cache.examples;
+
+  const examples = await fetcher();
+  if (examples.length > 0) {
+    state[cacheKey] = { date: today, examples };
+    console.log(`${label}キャッシュを更新しました(${examples.length}件)`);
+  }
+  return state[cacheKey].examples;
 }
 
 function pickCategory(recentCategories, hasNewVideo) {
@@ -225,19 +249,37 @@ function pickFormat(formatStats, recentFormats) {
   return pool.reduce((best, f) => (avgImpressions(f) > avgImpressions(best) ? f : best), pool[0]).id;
 }
 
-function buildPrompt(categoryId, context, formatId, trendExamples) {
+function exampleList(examples) {
+  return examples.map((e, i) => `${i + 1}. 「${e.text.replace(/\n/g, ' ')}」`).join('\n');
+}
+
+function buildPrompt(categoryId, context, formatId, trendExamples, viralExamples, ownExamples) {
   const base = `あなたはFX・投資系YouTubeチャンネル「TAC投資チャンネル」の公式X(Twitter)アカウント運用担当です。
 以下の制約を厳守して、日本語のツイート文を1つだけ生成してください。
 
 【文体】
 - カジュアルで親しみやすい口調(堅すぎる敬語や専門用語の羅列は避ける)
 - 絵文字は多用しすぎない(0〜2個程度)
+- AI(ChatGPTなど)が書いたような不自然さを消すこと。具体的には:
+  - Markdown記法(太字・見出し・箇条書き記号)は使わない(絵文字の番号や記号での整理は可)
+  - 「」や()の多用を避ける。コロン「:」も使わない
+  - 「以下で解説します」「〜という視点で見ていきましょう」のような構成を宣言する前置きを書かない
+  - 「参考になれば幸いです」のようなテンプレ的な締めの一文を使わない
+  - 「一概には言えませんが」「場合によります」「一般的に」「多くの場合」「状況によって異なります」のような、判断を全部読者に丸投げする保険文句・ぼかし表現を使わない
+  - 「重要」「効果的」「本質」「価値」のような抽象的な万能語に逃げず、具体的に何がどうなのかを書く
+  - 同じ文末表現を連続させない。短文と長文を意図的に混ぜる
+  - 羅針盤・地図・土台・エンジンのような、比喩として使い古された表現を避ける
+
+【断定と言い切りについて】
+プロフィール欄に「投資助言ではない」旨の免責はすでに記載済みなので、投稿本文で毎回保険をかける必要はない。
+「絶対儲かる」「確実に上がる/下がる」のような利益保証・断定的な投資助言はNGだが、それ以外の自分の見方・意見・感想ははっきり言い切ってよい。
+ぼかしすぎて当たり障りのない内容にすると誰にも刺さらないので、避けること。
 
 【厳守事項】
 - 文字数は内容と切り口に合わせて自由でよい(全角100〜120文字程度が基本の目安だが、短い一言でインパクトを出す切り口なら全角20〜40文字程度でも構わない。逆に長くても全角130文字程度までに収める)
-- 「絶対」「確実に儲かる」「元本保証」「必ず勝てる」など、断定的な投資助言・利回り保証と受け取られる表現は一切使わない
+- 「絶対に儲かる」「確実に儲かる」「元本保証」「必ず勝てる」など、利益や結果を保証する断定表現は一切使わない(相場観や意見の言い切りはOK)
 - 特定の売買を推奨する表現(「今すぐ買うべき」等)は使わない
-- 事実に基づかない具体的な数値(価格・指標の値など)を創作しない。不確かな場合は数値を出さずに一般的な言及にとどめる
+- 事実に基づかない具体的な数値(価格・指標の値など)を創作しない。不確かな場合は数値を出さずに、自分の見立てとして言い切る
 - 出力はツイート本文のみ。説明や前置き、引用符は不要`;
 
   const perCategory = {
@@ -261,19 +303,28 @@ URLやチャンネルへの誘導文は入れないでください(本文のみ)
   const format = FORMATS.find((f) => f.id === formatId);
   const formatInstruction = format ? `\n【今回の切り口】${format.instruction}` : '';
 
-  let trendSection = '';
+  let referenceSection = '';
+  const refParts = [];
   if (trendExamples && trendExamples.length > 0) {
-    const list = trendExamples.map((e, i) => `${i + 1}. 「${e.text.replace(/\n/g, ' ')}」`).join('\n');
-    trendSection = `
-【参考】今、X上でFX/金融ジャンルで反応が多いツイートの例です:
-${list}
-これらの文章や表現をそのままコピーせず、なぜ反応を得られていそうか(切り口・テンポ・共感ポイントなど)を分析し、その学びだけを今回の投稿に活かしてください。`;
+    refParts.push(`今、X上でFX/金融ジャンルで反応が多いツイートの例:\n${exampleList(trendExamples)}`);
+  }
+  if (viralExamples && viralExamples.length > 0) {
+    refParts.push(`ジャンルを問わず今バズっているツイートの例(文体・テンポの参考):\n${exampleList(viralExamples)}`);
+  }
+  if (ownExamples && ownExamples.length > 0) {
+    refParts.push(`このアカウント自身の過去の投稿例(口調・雰囲気を保つための参考):\n${exampleList(ownExamples)}`);
+  }
+  if (refParts.length > 0) {
+    referenceSection = `
+【参考ツイート】
+${refParts.join('\n\n')}
+これらの文章や表現をそのままコピーせず、なぜ反応を得られていそうか(切り口・テンポ・共感ポイントなど)や、このアカウントらしい口調を分析し、その学びだけを今回の投稿に活かしてください。`;
   }
 
-  return base + '\n' + (perCategory[categoryId] || '') + formatInstruction + trendSection;
+  return base + '\n' + (perCategory[categoryId] || '') + formatInstruction + referenceSection;
 }
 
-async function generateTweet(categoryId, context, formatId, trendExamples, anthropic) {
+async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
   const tools = category.needsSearch
     ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
@@ -282,7 +333,7 @@ async function generateTweet(categoryId, context, formatId, trendExamples, anthr
   const response = await anthropic.messages.create({
     model: 'claude-opus-5',
     max_tokens: 1024,
-    system: buildPrompt(categoryId, context, formatId, trendExamples),
+    system: buildPrompt(categoryId, context, formatId, trendExamples, viralExamples, ownExamples),
     messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
     ...(tools ? { tools } : {}),
   });
@@ -435,15 +486,18 @@ async function main() {
     return t.length > 0 && w >= MIN_WEIGHTED_LENGTH && w <= MAX_WEIGHTED_LENGTH && !violatesBannedPatterns(t);
   }
 
-  // 短文パンチラインの時だけ、実際に伸びているFX/金融ジャンルのツイートを分析材料にする
-  const trendExamples = formatId === 'punchline' ? await ensureTrendCache(state) : [];
+  // 「AIっぽさ」を消し、実際に反応が取れている文体を学ばせるための参考ツイート
+  // (すべてキャッシュ済みなので、毎回参照してもコストはほぼ増えない)
+  const trendExamples = await ensureCache(state, 'fxTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(FX_TREND_SEARCH_QUERY), 'FXトレンド分析');
+  const viralExamples = await ensureCache(state, 'viralTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(VIRAL_TREND_SEARCH_QUERY), 'バズツイート分析');
+  const ownExamples = await ensureCache(state, 'ownTweetsCache', OWN_TWEETS_CACHE_VALID_DAYS, fetchOwnRecentTweets, '自分の過去ツイート');
 
-  let text = await generateTweet(categoryId, context, formatId, trendExamples, anthropic);
+  let text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic);
   console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
 
   if (!isValid(text)) {
     console.log('禁止表現または文字数超過を検出。再生成します。');
-    text = await generateTweet(categoryId, context, formatId, trendExamples, anthropic);
+    text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, ownExamples, anthropic);
     console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
   }
 
