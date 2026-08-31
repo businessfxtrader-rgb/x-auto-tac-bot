@@ -8,8 +8,8 @@
   ],
   "lastVideoId": "0yuVXkAqQo0",
   "dailyPostCount": {
-    "date": "2026-08-31",
-    "count": 1
+    "date": "2026-09-01",
+    "count": 0
   },
   "slotStats": {
     "10": {
@@ -21,8 +21,8 @@
       "totalImpressions": 142
     },
     "1140": {
-      "trials": 1,
-      "totalImpressions": 59
+      "trials": 2,
+      "totalImpressions": 85
     }
   },
   "formatStats": {
@@ -45,6 +45,10 @@
     "direct_tip": {
       "trials": 1,
       "totalImpressions": 45
+    },
+    "punchline": {
+      "trials": 1,
+      "totalImpressions": 26
     }
   },
   "recentFormats": [
@@ -55,22 +59,14 @@
     "surprising_fact"
   ],
   "todaysPlan": {
-    "date": "2026-08-31",
+    "date": "2026-09-01",
     "slots": [
       450,
       1140
     ],
-    "postedSlots": [
-      450
-    ]
+    "postedSlots": []
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2094071512726749355",
-      "slot": 1140,
-      "format": "punchline",
-      "postedAt": "2026-08-30T14:35:29.411Z"
-    },
     {
       "tweetId": "2094224524795601136",
       "slot": 450,
