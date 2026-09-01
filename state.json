@@ -1,22 +1,69 @@
 {
   "recentCategories": [
-    "video_announcement",
+    "market_news",
+    "fx_basics",
+    "video_recap",
     "fx_basics",
     "market_news"
   ],
   "lastVideoId": "0yuVXkAqQo0",
   "dailyPostCount": {
-    "date": "2026-08-28",
+    "date": "2026-09-01",
     "count": 1
   },
-  "slotStats": {},
-  "formatStats": {},
+  "slotStats": {
+    "10": {
+      "trials": 1,
+      "totalImpressions": 107
+    },
+    "450": {
+      "trials": 4,
+      "totalImpressions": 170
+    },
+    "1140": {
+      "trials": 2,
+      "totalImpressions": 85
+    }
+  },
+  "formatStats": {
+    "question_hook": {
+      "trials": 1,
+      "totalImpressions": 107
+    },
+    "listicle": {
+      "trials": 1,
+      "totalImpressions": 74
+    },
+    "casual_chat": {
+      "trials": 1,
+      "totalImpressions": 23
+    },
+    "story_lead": {
+      "trials": 1,
+      "totalImpressions": 59
+    },
+    "direct_tip": {
+      "trials": 1,
+      "totalImpressions": 45
+    },
+    "punchline": {
+      "trials": 1,
+      "totalImpressions": 26
+    },
+    "surprising_fact": {
+      "trials": 1,
+      "totalImpressions": 28
+    }
+  },
   "recentFormats": [
-    "question_hook",
-    "listicle"
+    "story_lead",
+    "direct_tip",
+    "punchline",
+    "surprising_fact",
+    "direct_tip"
   ],
   "todaysPlan": {
-    "date": "2026-08-28",
+    "date": "2026-09-01",
     "slots": [
       450,
       1140
@@ -27,18 +74,62 @@
   },
   "pendingMetrics": [
     {
-      "tweetId": "2092989869203357723",
-      "slot": 10,
-      "format": "question_hook",
-      "postedAt": "2026-08-27T14:57:25.471Z"
-    },
-    {
-      "tweetId": "2093201574239862931",
+      "tweetId": "2094596828280783329",
       "slot": 450,
-      "format": "listicle",
-      "postedAt": "2026-08-28T04:58:39.881Z"
+      "format": "direct_tip",
+      "postedAt": "2026-09-01T01:22:54.424Z"
     }
   ],
+  "fxTrendCache": {
+    "date": "2026-09-01",
+    "examples": [
+      {
+        "text": "今月キオクシアが分割したら短期投資引退です",
+        "engagement": 0
+      },
+      {
+        "text": "浦田と小幡トレードしろ",
+        "engagement": 0
+      },
+      {
+        "text": "2026年8月31日時点\n評価額→→  40,857,425円\n前日比→ +59,884円\n\n8月は+150万程で終了\n7月の下げをしっかり回収\n\n世界的に金利高\n🇯🇵🇺🇸🇩🇪…\n株にはネガティブだけど、きっと多少の利上げではビクともしなそうな相場に感じます\n\n#投資家さんと繋がりたい\n#株クラ https://t.co/trjAJosenh",
+        "engagement": 0
+      },
+      {
+        "text": "投資を検討する際には、リスクを理解し、賢明な選択をする。\n考えすぎて行動を起こさないのも吉。\n失敗も必要だとおもう。\n#投資",
+        "engagement": 0
+      },
+      {
+        "text": "合間にスマホ見るだけで勝ててます👏\n\n勝てなくて悩んでる人は絶対\nフォローした方がいいです！\n\nUSDJPY ドル円 BTC ゴールド米国株 日経平均 雇用統計 キオクシア 日経先物 日米協調介入 ビットコイン 仮想通貨 NISA 日経先物 為替介入 S&amp;P500 テスラ 半導体 イーサリアム https://t.co/SnrWde9y2p",
+        "engagement": 0
+      }
+    ]
+  },
+  "viralTrendCache": {
+    "date": "2026-09-01",
+    "examples": [
+      {
+        "text": "🧪の衣装は露出が少なくてどうのこうの、みたいなツイート流れてきてそう！わかるの！そうなんだよー！ってなった 女である私は女の子の肌露出は望んでないから(本人が望んでるなら出せばいい)🧪はそういうとこだけ安心できるなって、前屈みになった時に胸元見えちゃう衣装は改善して欲しいけど🙂‍↕️",
+        "engagement": 1
+      },
+      {
+        "text": "地域だって限られるし、\n学校が制服でわかるだろうから\n学校に相談してもいいのでは無いかと。 https://t.co/GiipNo3Zel",
+        "engagement": 0
+      },
+      {
+        "text": "ｼﾞｪﾀ本社🇰🇷ならわかるでしょ頼む😭😭😭😭年上彼氏を呼び捨てで呼ぶの難しすぎる、さん付けだめならせめて오빠って呼ばせて✋🏻💦💦💦",
+        "engagement": 0
+      },
+      {
+        "text": "おはよう世界\n\n迷惑メール（詐欺メール）の\n多さに\n世の中が如何に困窮しているかがわかる\n\nなにしてくれとんねん！\n毎日毎日、報告するのが面倒なんじや！💢",
+        "engagement": 0
+      },
+      {
+        "text": "これまでの私のこと。\nなぜ「フリ女」を立ち上げたのか。\nそして、これから何を実現していきたいのか。\n今まであまり話してこなかった思いを、\nこの記事にすべて詰め込みました。\nこの記事を読んで少しでも共感してくださった方と、\nこれからのフリ女を一緒につくっていきたいです！🌸 https://t.co/lBE8hMZtCF",
+        "engagement": 0
+      }
+    ]
+  },
   "trendCache": {
     "date": null,
     "examples": []
