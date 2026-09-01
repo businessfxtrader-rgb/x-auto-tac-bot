@@ -304,11 +304,11 @@ ${refParts.join('\n\n')}
 async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
   const tools = category.needsSearch
-    ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]
+    ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }]
     : undefined;
 
   const response = await anthropic.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-sonnet-5',
     max_tokens: 1024,
     system: buildPrompt(categoryId, context, formatId, trendExamples, viralExamples),
     messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
