@@ -2,9 +2,11 @@ name: TAC Auto Post
 
 on:
   schedule:
-    # 固定2枠: 7:30 JST と 19:00 JST (UTC+9) → UTC 22:30(前日) と UTC 10:00
-    - cron: '30 22 * * *'
-    - cron: '0 10 * * *'
+    # 投稿の目標時刻は7:30 JST / 19:00 JSTだが、GitHub Actionsのスケジュール実行は
+    # 数時間単位で遅延することがあるため、30分おきにチェックして
+    # 「時刻が来ていて未消化の枠」があれば投稿する(tac-post.js側の判定)。
+    # 該当枠が無ければ何もせず終了するので、頻度を上げてもX API側のコストは増えない。
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
