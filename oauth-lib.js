@@ -10,7 +10,6 @@ function loadConfig() {
     consumerSecret: process.env.CONSUMER_SECRET,
     posterAccessToken: process.env.POSTER_ACCESS_TOKEN,
     posterAccessSecret: process.env.POSTER_ACCESS_SECRET,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     youtubeChannelId: process.env.YOUTUBE_CHANNEL_ID,
   };
 }

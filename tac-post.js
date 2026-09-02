@@ -1,12 +1,16 @@
 // TAC_FXtrade 自動投稿ボット
-// Claude APIで投稿文を生成し、そのままXに投稿する(完全自動)。
+// Claude Code CLI(サブスクリプション認証、追加API課金なし)で投稿文を生成し、
+// そのままXに投稿する(完全自動)。
+// 事前に `claude setup-token` で取得したトークンを環境変数
+// CLAUDE_CODE_OAUTH_TOKEN に設定しておく必要がある。
 // 使い方:
 //   node tac-post.js --dry-run   生成のみ行い、投稿はしない(動作確認用)
 //   node tac-post.js             実際に投稿する
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const Anthropic = require('@anthropic-ai/sdk');
+const { execFileSync } = require('child_process');
 const { apiPostJson, apiGet, loadConfig } = require('./oauth-lib');
 
 const config = loadConfig();
@@ -301,24 +305,32 @@ ${refParts.join('\n\n')}
   return base + '\n' + (perCategory[categoryId] || '') + formatInstruction + referenceSection;
 }
 
-async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic) {
+// Claude Code CLI(サブスクリプション認証)を非対話モードで呼び出し、投稿文を1つ生成する。
+// ファイル操作・コマンド実行系のツールは明示的に禁止し、必要な場合のみWebSearchのみ許可する。
+async function generateTweet(categoryId, context, formatId, trendExamples, viralExamples) {
   const category = CATEGORIES.find((c) => c.id === categoryId) || { needsSearch: categoryId === 'video_announcement' ? false : true };
-  const tools = category.needsSearch
-    ? [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }]
-    : undefined;
+  const systemPrompt = buildPrompt(categoryId, context, formatId, trendExamples, viralExamples);
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-5',
-    max_tokens: 1024,
-    system: buildPrompt(categoryId, context, formatId, trendExamples, viralExamples),
-    messages: [{ role: 'user', content: 'ツイート文を生成してください。' }],
-    ...(tools ? { tools } : {}),
-  });
+  const promptFile = path.join(os.tmpdir(), `tac-system-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
+  fs.writeFileSync(promptFile, systemPrompt, 'utf8');
 
-  // ツール使用時、ツール呼び出し前の前置きテキストブロックが混ざることがあるため、
-  // 最後のテキストブロック(最終回答)のみを採用する
-  const textBlocks = response.content.filter((b) => b.type === 'text').map((b) => b.text.trim());
-  return (textBlocks[textBlocks.length - 1] || '').trim();
+  const args = [
+    '-p', 'ツイート文を生成してください。',
+    '--system-prompt-file', promptFile,
+    '--disallowedTools', 'Bash,Edit,Write,Read,AskUserQuestion',
+    '--output-format', 'json',
+  ];
+  if (category.needsSearch) {
+    args.push('--allowedTools', 'WebSearch');
+  }
+
+  try {
+    const stdout = execFileSync('claude', args, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+    const parsed = JSON.parse(stdout);
+    return (parsed.result || '').trim();
+  } finally {
+    fs.unlinkSync(promptFile);
+  }
 }
 
 function violatesBannedPatterns(text) {
@@ -416,8 +428,6 @@ async function main() {
   const plan = ensureTodaysPlan(state);
   if (!plan.postedSlots) plan.postedSlots = [];
 
-  const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
-
   const feed = await fetchYoutubeFeed();
   const latest = feed[0];
   const hasNewVideo = !!(latest && latest.videoId !== state.lastVideoId);
@@ -468,12 +478,12 @@ async function main() {
   const trendExamples = await ensureCache(state, 'fxTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(FX_TREND_SEARCH_QUERY), 'FXトレンド分析');
   const viralExamples = await ensureCache(state, 'viralTrendCache', TREND_CACHE_VALID_DAYS, () => fetchTweetsBySearch(VIRAL_TREND_SEARCH_QUERY), 'バズツイート分析');
 
-  let text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic);
+  let text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples);
   console.log('生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
 
   if (!isValid(text)) {
     console.log('禁止表現または文字数超過を検出。再生成します。');
-    text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples, anthropic);
+    text = await generateTweet(categoryId, context, formatId, trendExamples, viralExamples);
     console.log('再生成結果 (weighted ' + weightedTweetLength(text) + '):\n' + text);
   }
 

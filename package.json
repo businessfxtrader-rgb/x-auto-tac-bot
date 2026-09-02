@@ -2,9 +2,7 @@
   "name": "x-auto-tac-bot",
   "private": true,
   "version": "1.0.0",
-  "description": "TAC_FXtrade 自動投稿ボット(Claude APIで生成した投稿文をXに自動投稿)",
+  "description": "TAC_FXtrade 自動投稿ボット(Claude Code CLIで生成した投稿文をXに自動投稿)",
   "main": "tac-post.js",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.120.0"
-  }
+  "dependencies": {}
 }
