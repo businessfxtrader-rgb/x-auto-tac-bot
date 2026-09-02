@@ -518,5 +518,7 @@ async function main() {
 
 main().catch((err) => {
   console.error('エラー:', err.message);
+  if (err.stderr) console.error('stderr:', err.stderr.toString());
+  if (err.stdout) console.error('stdout:', err.stdout.toString());
   process.exit(1);
 });
