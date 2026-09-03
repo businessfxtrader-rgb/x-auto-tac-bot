@@ -1,15 +1,15 @@
 {
   "recentCategories": [
-    "fx_basics",
     "market_news",
     "fx_basics",
     "market_news",
-    "fx_basics"
+    "fx_basics",
+    "market_news"
   ],
   "lastVideoId": "0yuVXkAqQo0",
   "dailyPostCount": {
     "date": "2026-09-03",
-    "count": 1
+    "count": 2
   },
   "slotStats": {
     "10": {
@@ -17,22 +17,22 @@
       "totalImpressions": 107
     },
     "450": {
-      "trials": 5,
-      "totalImpressions": 237
+      "trials": 6,
+      "totalImpressions": 265
     },
     "1140": {
-      "trials": 2,
-      "totalImpressions": 85
+      "trials": 3,
+      "totalImpressions": 356
     }
   },
   "formatStats": {
     "question_hook": {
-      "trials": 1,
-      "totalImpressions": 107
+      "trials": 2,
+      "totalImpressions": 135
     },
     "listicle": {
-      "trials": 1,
-      "totalImpressions": 74
+      "trials": 2,
+      "totalImpressions": 345
     },
     "casual_chat": {
       "trials": 1,
@@ -56,11 +56,11 @@
     }
   },
   "recentFormats": [
-    "surprising_fact",
     "direct_tip",
     "question_hook",
     "listicle",
-    "story_lead"
+    "story_lead",
+    "question_hook"
   ],
   "todaysPlan": {
     "date": "2026-09-03",
@@ -69,27 +69,22 @@
       1140
     ],
     "postedSlots": [
-      450
+      450,
+      1140
     ]
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2095078531050918031",
-      "slot": 450,
-      "format": "question_hook",
-      "postedAt": "2026-09-02T09:17:01.288Z"
-    },
-    {
-      "tweetId": "2095113398446969008",
-      "slot": 1140,
-      "format": "listicle",
-      "postedAt": "2026-09-02T11:35:34.309Z"
-    },
     {
       "tweetId": "2095298835920965655",
       "slot": 450,
       "format": "story_lead",
       "postedAt": "2026-09-02T23:52:26.029Z"
+    },
+    {
+      "tweetId": "2095481361037418941",
+      "slot": 1140,
+      "format": "question_hook",
+      "postedAt": "2026-09-03T11:57:43.436Z"
     }
   ],
   "fxTrendCache": {
