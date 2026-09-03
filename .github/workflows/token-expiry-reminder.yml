@@ -1,0 +1,55 @@
+name: Token Expiry Reminder
+
+on:
+  schedule:
+    # 毎日1回チェック(9:00 UTC = 18:00 JST)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if within 7 days of token expiry
+        id: check
+        run: |
+          # CLAUDE_CODE_OAUTH_TOKEN は 2026-09-02 発行、有効期限1年 (2027-09-02)
+          EXPIRY_DATE="2027-09-02"
+          TODAY=$(date -u +%Y-%m-%d)
+          DAYS_LEFT=$(( ($(date -u -d "$EXPIRY_DATE" +%s) - $(date -u -d "$TODAY" +%s)) / 86400 ))
+          echo "days_left=$DAYS_LEFT" >> "$GITHUB_OUTPUT"
+          echo "残り日数: $DAYS_LEFT"
+          if [ "$DAYS_LEFT" -le 7 ] && [ "$DAYS_LEFT" -ge 0 ]; then
+            echo "should_notify=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_notify=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send reminder email
+        if: steps.check.outputs.should_notify == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_ADDRESS }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "【要対応】TAC自動投稿ボット: Claude Codeトークン更新のお願い(残り${{ steps.check.outputs.days_left }}日)"
+          to: ${{ secrets.GMAIL_ADDRESS }}
+          from: TAC自動投稿ボット
+          body: |
+            TAC_FXtrade自動投稿ボットで使用しているClaude Code OAuthトークンが、
+            あと${{ steps.check.outputs.days_left }}日で失効します(発行から1年間有効)。
+
+            期限が切れると投稿が停止します。以下の手順で更新してください。
+
+            【更新手順】
+            1. ターミナルで次のコマンドを実行し、ブラウザでログイン・承認する
+               claude setup-token
+
+            2. 表示された新しいトークンをコピーする
+
+            3. 以下のコマンドでGitHub Secretsを更新する
+               gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo businessfxtrader-rgb/x-auto-tac-bot --body "<新しいトークン>"
+
+            詳細はリポジトリのREADME.mdも参照してください。
+            https://github.com/businessfxtrader-rgb/x-auto-tac-bot
