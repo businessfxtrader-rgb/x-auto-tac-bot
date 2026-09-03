@@ -5,6 +5,11 @@ on:
     # 毎日1回チェック(9:00 UTC = 18:00 JST)
     - cron: '0 9 * * *'
   workflow_dispatch:
+    inputs:
+      force_send:
+        description: '動作確認用: 日数に関わらず強制送信する'
+        type: boolean
+        default: false
 
 jobs:
   check-and-notify:
@@ -19,7 +24,7 @@ jobs:
           DAYS_LEFT=$(( ($(date -u -d "$EXPIRY_DATE" +%s) - $(date -u -d "$TODAY" +%s)) / 86400 ))
           echo "days_left=$DAYS_LEFT" >> "$GITHUB_OUTPUT"
           echo "残り日数: $DAYS_LEFT"
-          if [ "$DAYS_LEFT" -le 7 ] && [ "$DAYS_LEFT" -ge 0 ]; then
+          if { [ "$DAYS_LEFT" -le 7 ] && [ "$DAYS_LEFT" -ge 0 ]; } || [ "${{ inputs.force_send }}" = "true" ]; then
             echo "should_notify=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_notify=false" >> "$GITHUB_OUTPUT"
