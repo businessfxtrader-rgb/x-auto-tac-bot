@@ -21,8 +21,8 @@
       "totalImpressions": 730
     },
     "1140": {
-      "trials": 9,
-      "totalImpressions": 835
+      "trials": 10,
+      "totalImpressions": 1030
     }
   },
   "formatStats": {
@@ -31,8 +31,8 @@
       "totalImpressions": 569
     },
     "listicle": {
-      "trials": 6,
-      "totalImpressions": 602
+      "trials": 7,
+      "totalImpressions": 797
     },
     "casual_chat": {
       "trials": 1,
@@ -74,12 +74,6 @@
     ]
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2097988847124496653",
-      "slot": 1140,
-      "format": "listicle",
-      "postedAt": "2026-09-10T10:01:34.705Z"
-    },
     {
       "tweetId": "2098177440908525966",
       "slot": 450,
