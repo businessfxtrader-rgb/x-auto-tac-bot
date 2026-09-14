@@ -18,11 +18,11 @@ const STATE_FILE = path.join(__dirname, 'state.json');
 const X_API_BASE = 'https://api.twitter.com/2';
 
 // 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁)
-const MAX_POSTS_PER_DAY = 3;
+const MAX_POSTS_PER_DAY = 2;
 
-// 投稿時間帯(JST、分単位で表現。固定2枠: 7:30 と 19:00)
-const CANDIDATE_SLOTS_JST = [7 * 60 + 30, 19 * 60];
-const POSTS_PER_DAY_TARGET = 2;
+// 投稿時間帯(JST、分単位で表現。固定1枠: 13:00)
+const CANDIDATE_SLOTS_JST = [13 * 60];
+const POSTS_PER_DAY_TARGET = 1;
 const EPSILON = 0.25; // 切り口(FORMATS)選定でこの確率でランダムな(まだ実績の薄い)ものを試す
 
 function formatSlot(minutes) {
@@ -277,7 +277,7 @@ function buildPrompt(categoryId, context, formatId, trendExamples, viralExamples
 必ずWeb検索ツールで事実関係を確認してから書いてください。裏取りできない噂話や未確認情報は扱わないこと。個人への誹謗中傷や決めつけにならないよう、事実の紹介にとどめ、断定的な評価は避けてください。`,
     video_recap: `
 【今回のテーマ】以下のチャンネル過去動画を、見ていない人が興味を持つように、ネタバレしすぎない範囲で軽く紹介してください。動画タイトル: 「${context.videoTitle || 'FX初心者向け解説動画'}」
-URLやチャンネルへの誘導文は入れないでください(本文のみ)。`,
+${context.videoUrl ? `最後に必ずこのURLを含めてください: ${context.videoUrl}` : ''}`,
     video_announcement: `
 【今回のテーマ】YouTubeチャンネルに新しい動画がアップされました。視聴を呼びかける告知ツイートを書いてください。
 動画タイトル: 「${context.videoTitle}」
@@ -461,9 +461,11 @@ async function main() {
   } else if (categoryId === 'video_recap') {
     const fxVideos = filterFxRelated(feed);
     if (fxVideos.length > 0) {
-      context.videoTitle = fxVideos[Math.floor(Math.random() * fxVideos.length)].title;
+      const pick = fxVideos[Math.floor(Math.random() * fxVideos.length)];
+      context.videoTitle = pick.title;
+      context.videoUrl = pick.url;
     }
-    // 該当がない場合はbuildPrompt側のデフォルトタイトルにフォールバックする
+    // 該当がない場合はbuildPrompt側のデフォルトタイトルにフォールバックする(URLなし)
   }
 
   const MIN_WEIGHTED_LENGTH = 16; // バズ狙いの短い一言ツイートは許容しつつ、実質空(1文字だけ等)のゴミ出力だけを弾く
