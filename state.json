@@ -1,15 +1,15 @@
 {
   "recentCategories": [
-    "video_announcement",
     "market_news",
     "fx_basics",
     "celebrity_story",
-    "video_recap"
+    "video_recap",
+    "fx_basics"
   ],
   "lastVideoId": "UF3abeZ_-DE",
   "dailyPostCount": {
     "date": "2026-09-22",
-    "count": 0
+    "count": 1
   },
   "slotStats": {
     "10": {
@@ -64,18 +64,20 @@
     }
   },
   "recentFormats": [
-    "direct_tip",
     "listicle",
     "question_hook",
     "story_lead",
-    "listicle"
+    "listicle",
+    "question_hook"
   ],
   "todaysPlan": {
     "date": "2026-09-22",
     "slots": [
       780
     ],
-    "postedSlots": []
+    "postedSlots": [
+      780
+    ]
   },
   "pendingMetrics": [
     {
@@ -83,54 +85,60 @@
       "slot": 780,
       "format": "listicle",
       "postedAt": "2026-09-21T04:01:16.541Z"
+    },
+    {
+      "tweetId": "2102246808936395135",
+      "slot": 780,
+      "format": "question_hook",
+      "postedAt": "2026-09-22T04:01:11.878Z"
     }
   ],
   "fxTrendCache": {
-    "date": "2026-09-19",
+    "date": "2026-09-22",
     "examples": [
       {
-        "text": "【日本株に違和感‼︎】日米利上げなのにAI半導体株、グロース株急騰。 日経平均882円高で高配当、バリュー株下落。ドル円も機関円爆買いで大荒れ。米国株、ナスダック、ハイテク株、仮想通貨BTC急騰。\nhttps://t.co/zI2c3OwtyR",
-        "engagement": 3
-      },
-      {
-        "text": "🚨「トランプ効果 🥤  世界最大の飲料メーカーであるコカ・コーラ社が、米国のインフラに１００億ドルを投じると発表しました\n トランプ大統領が「メイド・イン・アメリカ（米国製）」を復活させる中、世界中の企業が米国への投資を行っています💰💵 https://t.co/q32IIldav4",
-        "engagement": 1
-      },
-      {
-        "text": "**キーエンス(6861)**がもう62,000円まで下がってしまいました。\n\n数日前に私がお伝えした下落の流れ、またしても正確に的中しましたよね？\n\n短期的に追加で下落する可能性もまだあります。\n\nまもなく買いに良いタイミングがやってきます。\n\n#キーエンス #日本株 #株式投資 #株クラ #資産運用",
+        "text": "【PR】📈\n株式投資をこれから始めたい人へ。\n\n「DMM 株」は日本株・米国株・NISAをアプリで取引できます。\n初心者向けの「かんたんモード」と「ノーマルモード」の切り替えも可能。\n\n詳細はこちら👇\nhttps://t.co/2Vd1U5uQLr",
         "engagement": 0
       },
       {
-        "text": "科研製薬がイベルメクチン関連の研究を盛んに行っており、先日も新薬「KAR」の承認申請を行っている。mRNA癌治療の有害性が広がって忌避感から投資が回収されると、代わりに癌への有効性の展望が開くイベルメクチン併用薬投資に一気にひっくり返る可能性が高いな。\n\nhttps://t.co/Mn6qD0an6H https://t.co/nF16sw1Y6n",
+        "text": "7/27分です\n\n入金額280万円\n#株式投資 #個別株 https://t.co/0Y19eOYWdr",
         "engagement": 0
       },
       {
-        "text": "宮島6R｜回収率重視4点予想｜\n\n13:07締め切り。\n\nオススメレース✨\n\n競艇は絞らないと勝てません。\n確実に狙いに行く4点予想で配信します！\n\n是非ご参加ください🔥\n\n《本日の収支》\n投資→120,000円\n回収→346,000円\n\nゆうか｜回収率重視の競艇予想 @yuka_boat https://t.co/xcEMjZuTAf",
+        "text": "【市況急変】銀先物 -1.10%急落 (13:00)\n📍検知：世界株価センチネル\n⚠️防護：ShockSentinel WARNING (ロット50%縮小)\n🖼画像：急変時系列チャート添付\n\n#日本株 #米国株 #為替 #世界の株価 https://t.co/fJC64SXE3k",
+        "engagement": 0
+      },
+      {
+        "text": "ラスト1打のfxを叩き忘れてS逃したと思う人いいね👍️ https://t.co/vSgyksbQFV",
+        "engagement": 0
+      },
+      {
+        "text": "フォローした覚えのない投資のアカウントをフォローしてて、フォロワーにイラストアカウントが多数あるので調べたら乗っ取られたアンティークイラストアカウントらしい。悲しいけどフォロー外した。 https://t.co/awlYoTE5T9",
         "engagement": 0
       }
     ]
   },
   "viralTrendCache": {
-    "date": "2026-09-19",
+    "date": "2026-09-22",
     "examples": [
       {
-        "text": "納豆！！俺も好きだ。笑\nわかるなぁ。ひなちゃんのそのごんなさいの気持ち。笑\n納豆あるあるだよね笑\n\n#hinamarutalk",
+        "text": "μ's←俺の原点！\nAqours←わかる\n鈴木愛奈さん←最推し\n虹ヶ咲←わかる\nLiella! ←わかる\n岬なこさん←わかる\nAya Emori←わかる\n蓮ノ空←わかる\nいきづらい部←わかる\n\nSixTONES←！！！！？？？？？？\n\nってなってる",
         "engagement": 0
       },
       {
-        "text": "Herlipto 新宿トートの在庫状況わかる方いましたらリプいただけないでしょうか😭",
+        "text": "エッチな時期がある←わかる。\n好奇心で女になって抱かれて出←脳破壊",
         "engagement": 0
       },
       {
-        "text": "ろくでもない奴あるある\n\n→bioに「成人済み」",
+        "text": "わかる〜 https://t.co/zr5wvjqEGw",
         "engagement": 0
       },
       {
-        "text": "わかるー\n\n現地に💰払って見に行ってクソ試合見せられて怒るのは100歩譲って理解できるけど、冷暖房効いた部屋でテレビ見ながらガタガタ言われたくないだろうね https://t.co/OEVbg0nThO",
+        "text": "やっぱりわかる人はわかるよねぇー🙂‍↕️",
         "engagement": 0
       },
       {
-        "text": "マミーブレインって生涯続くの？？\nしかも脳検査で産んだ人数もわかるの？？\n\nひえーーー😱",
+        "text": "通販の高枝切りバサミって実は重要なマーケティング可能で、購買層は庭付きのそこそこ富裕層ってわかるのよね　#ゴールデンラジオ",
         "engagement": 0
       }
     ]
