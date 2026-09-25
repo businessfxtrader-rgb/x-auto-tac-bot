@@ -1,15 +1,15 @@
 {
   "recentCategories": [
-    "celebrity_story",
     "video_recap",
     "fx_basics",
     "video_recap",
-    "market_news"
+    "market_news",
+    "fx_basics"
   ],
   "lastVideoId": "UF3abeZ_-DE",
   "dailyPostCount": {
     "date": "2026-09-25",
-    "count": 0
+    "count": 1
   },
   "slotStats": {
     "10": {
@@ -64,18 +64,20 @@
     }
   },
   "recentFormats": [
-    "story_lead",
     "listicle",
     "question_hook",
     "story_lead",
-    "listicle"
+    "listicle",
+    "question_hook"
   ],
   "todaysPlan": {
     "date": "2026-09-25",
     "slots": [
       780
     ],
-    "postedSlots": []
+    "postedSlots": [
+      780
+    ]
   },
   "pendingMetrics": [
     {
@@ -83,54 +85,60 @@
       "slot": 780,
       "format": "listicle",
       "postedAt": "2026-09-24T04:01:35.760Z"
+    },
+    {
+      "tweetId": "2103333978090467496",
+      "slot": 780,
+      "format": "question_hook",
+      "postedAt": "2026-09-25T04:01:13.227Z"
     }
   ],
   "fxTrendCache": {
-    "date": "2026-09-22",
+    "date": "2026-09-25",
     "examples": [
       {
-        "text": "【PR】📈\n株式投資をこれから始めたい人へ。\n\n「DMM 株」は日本株・米国株・NISAをアプリで取引できます。\n初心者向けの「かんたんモード」と「ノーマルモード」の切り替えも可能。\n\n詳細はこちら👇\nhttps://t.co/2Vd1U5uQLr",
+        "text": "この人知らないままFX続けてたら、今頃破産してたと思う。\n\nリスクを極限まで減らしたトレードスタイルだから、利益少なくても永続的にお金が増えていくんだよね。\n\nここまでの安心感、絶対他では得られない...！\n\nドル円 USDJPY ゴールド XAUUSD BTC https://t.co/BPWqG8q0VG",
         "engagement": 0
       },
       {
-        "text": "7/27分です\n\n入金額280万円\n#株式投資 #個別株 https://t.co/0Y19eOYWdr",
+        "text": "4,289.14ショート4,271.83で利確 +173.1p\nしっかりした値幅が取れた逆カウンター今週いままでで一番のストレス発散トレード。#値幅 #GOLD #ゴールド https://t.co/rJ6dX3GdXY",
         "engagement": 0
       },
       {
-        "text": "【市況急変】銀先物 -1.10%急落 (13:00)\n📍検知：世界株価センチネル\n⚠️防護：ShockSentinel WARNING (ロット50%縮小)\n🖼画像：急変時系列チャート添付\n\n#日本株 #米国株 #為替 #世界の株価 https://t.co/fJC64SXE3k",
+        "text": "🟡【決算速報】3333 あさひ\nhttps://t.co/7K4cZN3AaG\n\n【総合判断】\n🟡 中立　スコア：-30\n\n【判断材料】\n売上：前年同期比+0.7%（±5%以内、予想並み）※コンセンサス不明のため前年比フォールバック\n営業利益：前年同期比-14.0%（前年比下回る）※コンセンサス不明のため前年比フォールバック",
         "engagement": 0
       },
       {
-        "text": "ラスト1打のfxを叩き忘れてS逃したと思う人いいね👍️ https://t.co/vSgyksbQFV",
+        "text": "ハイクラスのミラーカードのトレード募集しています！\n\nよろしくお願いします🙇\n\n#ポケポケトレード\n\n求：コイル、フカマル、タイプヌル、エレキコード、ヒカリ\n\n譲：シェイミ、ニャビー、ゴースト、マホミル、マケンカニ、アローラベトベター、パルデアウパー、カモネギ、リーフ https://t.co/xiRcvFRTxn",
         "engagement": 0
       },
       {
-        "text": "フォローした覚えのない投資のアカウントをフォローしてて、フォロワーにイラストアカウントが多数あるので調べたら乗っ取られたアンティークイラストアカウントらしい。悲しいけどフォロー外した。 https://t.co/awlYoTE5T9",
+        "text": "孫正義氏のAI大勝負、膨らむ借金重圧に－OpenAI巨額投資で貸し手警戒 https://t.co/zeZb4GUDvH",
         "engagement": 0
       }
     ]
   },
   "viralTrendCache": {
-    "date": "2026-09-22",
+    "date": "2026-09-25",
     "examples": [
       {
-        "text": "μ's←俺の原点！\nAqours←わかる\n鈴木愛奈さん←最推し\n虹ヶ咲←わかる\nLiella! ←わかる\n岬なこさん←わかる\nAya Emori←わかる\n蓮ノ空←わかる\nいきづらい部←わかる\n\nSixTONES←！！！！？？？？？？\n\nってなってる",
+        "text": "これもわかる！ https://t.co/dKdBW5WLM7",
         "engagement": 0
       },
       {
-        "text": "エッチな時期がある←わかる。\n好奇心で女になって抱かれて出←脳破壊",
+        "text": "明日ライブだと思うとドキドキ！\n10年以上ぶりだし会場わかるかな…グッズちゃんと買えるかなあ？！前回のツアーのTシャツ買っとくべきだったかな、メンカラのTシャツが無い…。\nペンラとシュシュはあるし、大丈夫…なはず。あー楽しみ、、でも1人初めてだしどうしよう。緊張する。。",
         "engagement": 0
       },
       {
-        "text": "わかる〜 https://t.co/zr5wvjqEGw",
+        "text": "誰かおすすめのポケモン紹介してくれ！！！！！\n\nポケモン詳しくなりたいんだ！！！！！\n\nちなみに唯一しっかりどんな攻撃するかとかまでわかるのはホゲータぐらいしかないない( ´･ω･`)",
         "engagement": 0
       },
       {
-        "text": "やっぱりわかる人はわかるよねぇー🙂‍↕️",
+        "text": "蛙化ってそう言う意味だったんだ\nなんかよーわからんまんま使ってたわ\n\n共感性羞恥感じたり、好きって言って好きって返されると嫌いになるみたいなもんだと思ってた(そう言う意味で使ってる人が多かったから) https://t.co/sKbmdeJ2r6",
         "engagement": 0
       },
       {
-        "text": "通販の高枝切りバサミって実は重要なマーケティング可能で、購買層は庭付きのそこそこ富裕層ってわかるのよね　#ゴールデンラジオ",
+        "text": "全然人間だった🕺\n#熱千めら\n#サラマンダーあるあるビンゴ https://t.co/wuUuIvq5kS",
         "engagement": 0
       }
     ]
