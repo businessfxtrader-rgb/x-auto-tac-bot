@@ -21,8 +21,8 @@
       "totalImpressions": 1059
     },
     "780": {
-      "trials": 10,
-      "totalImpressions": 687
+      "trials": 11,
+      "totalImpressions": 712
     },
     "1140": {
       "trials": 14,
@@ -35,8 +35,8 @@
   },
   "formatStats": {
     "question_hook": {
-      "trials": 12,
-      "totalImpressions": 867
+      "trials": 13,
+      "totalImpressions": 892
     },
     "listicle": {
       "trials": 13,
@@ -80,12 +80,6 @@
     ]
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2103333978090467496",
-      "slot": 780,
-      "format": "question_hook",
-      "postedAt": "2026-09-25T04:01:13.227Z"
-    },
     {
       "tweetId": "2103696443898769756",
       "slot": 780,
