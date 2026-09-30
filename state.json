@@ -21,8 +21,8 @@
       "totalImpressions": 1059
     },
     "780": {
-      "trials": 14,
-      "totalImpressions": 874
+      "trials": 15,
+      "totalImpressions": 889
     },
     "1140": {
       "trials": 14,
@@ -55,8 +55,8 @@
       "totalImpressions": 371
     },
     "punchline": {
-      "trials": 1,
-      "totalImpressions": 26
+      "trials": 2,
+      "totalImpressions": 41
     },
     "surprising_fact": {
       "trials": 1,
@@ -80,12 +80,6 @@
     ]
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2104783512389788046",
-      "slot": 780,
-      "format": "punchline",
-      "postedAt": "2026-09-29T04:01:09.137Z"
-    },
     {
       "tweetId": "2105145909478871533",
       "slot": 780,
