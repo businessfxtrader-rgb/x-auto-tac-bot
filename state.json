@@ -1,15 +1,15 @@
 {
   "recentCategories": [
-    "fx_basics",
     "video_recap",
     "fx_basics",
     "video_recap",
-    "fx_basics"
+    "fx_basics",
+    "market_news"
   ],
   "lastVideoId": "UF3abeZ_-DE",
   "dailyPostCount": {
     "date": "2026-10-02",
-    "count": 0
+    "count": 1
   },
   "slotStats": {
     "10": {
@@ -64,18 +64,20 @@
     }
   },
   "recentFormats": [
-    "listicle",
     "question_hook",
     "punchline",
     "listicle",
-    "story_lead"
+    "story_lead",
+    "question_hook"
   ],
   "todaysPlan": {
     "date": "2026-10-02",
     "slots": [
       780
     ],
-    "postedSlots": []
+    "postedSlots": [
+      780
+    ]
   },
   "pendingMetrics": [
     {
@@ -83,6 +85,12 @@
       "slot": 780,
       "format": "story_lead",
       "postedAt": "2026-10-01T04:01:12.148Z"
+    },
+    {
+      "tweetId": "2105870685335642555",
+      "slot": 780,
+      "format": "question_hook",
+      "postedAt": "2026-10-02T04:01:11.359Z"
     }
   ],
   "fxTrendCache": {
