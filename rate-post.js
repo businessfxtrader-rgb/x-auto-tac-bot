@@ -70,6 +70,11 @@ async function main() {
   const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
   if (!dryRun) {
+    const dayOfWeek = now.getUTCDay(); // nowJst()はUTCメソッドでJSTの値を読む(0=日, 6=土)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      console.log('土日は為替市場が閉まっているためスキップします。');
+      return;
+    }
     if (state.lastPostedDate === today) {
       console.log('本日分は投稿済みのためスキップします。');
       return;
