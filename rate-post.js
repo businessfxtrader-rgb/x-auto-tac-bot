@@ -1,9 +1,9 @@
-// ドル円レート発表ボット(毎朝9:00 JST)
+// ドル円レート発表ボット(平日の毎朝8:00 JST前後)
 // Yahoo Financeから現在のドル円レートを取得し、固定フォーマット+画像でXに投稿する。
 // AI生成は使わない(tac-post.jsとは独立)。
 // 使い方:
 //   node rate-post.js --dry-run   レート取得と投稿文の確認のみ(時刻・投稿済みチェックは無視、投稿しない)
-//   node rate-post.js             9:00 JST以降で、本日未投稿なら投稿する
+//   node rate-post.js             平日の8:00 JST以降で、本日未投稿なら投稿する
 
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +12,7 @@ const { apiPostJson, apiPostMultipart, loadConfig } = require('./oauth-lib');
 const config = loadConfig();
 const STATE_FILE = path.join(__dirname, 'rate-state.json');
 const IMAGE_FILE = path.join(__dirname, 'rate-announce.jpg');
-const POST_TIME_MINUTES_JST = 9 * 60;
+const POST_TIME_MINUTES_JST = 8 * 60;
 const MAX_RATE_AGE_SECONDS = 4 * 24 * 60 * 60;
 
 function loadState() {
@@ -80,7 +80,7 @@ async function main() {
       return;
     }
     if (minutes < POST_TIME_MINUTES_JST) {
-      console.log('9:00 JST前のためスキップします。');
+      console.log('8:00 JST前のためスキップします。');
       return;
     }
   }
