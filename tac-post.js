@@ -17,12 +17,20 @@ const config = loadConfig();
 const STATE_FILE = path.join(__dirname, 'state.json');
 const X_API_BASE = 'https://api.twitter.com/2';
 
-// 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁)
-const MAX_POSTS_PER_DAY = 2;
+// 投稿時間帯(JST、分単位で表現)。平日は13:00の1回、土日は7:30と19:00の2回
+// (平日9:00のドル円レート投稿はrate-post.jsが担当し、土日はそれに代わってAI投稿を2回にしている)
+const WEEKDAY_SLOTS_JST = [13 * 60];
+const WEEKEND_SLOTS_JST = [7 * 60 + 30, 19 * 60];
 
-// 投稿時間帯(JST、分単位で表現。固定1枠: 13:00)
-const CANDIDATE_SLOTS_JST = [13 * 60];
-const POSTS_PER_DAY_TARGET = 1;
+function slotsForToday() {
+  const dayOfWeek = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCDay();
+  return dayOfWeek === 0 || dayOfWeek === 6 ? WEEKEND_SLOTS_JST : WEEKDAY_SLOTS_JST;
+}
+
+// 1日に投稿してよい最大回数(暴走・設定ミスによる予算超過を防ぐ安全弁。予定回数+1)
+function maxPostsToday() {
+  return slotsForToday().length + 1;
+}
 const EPSILON = 0.25; // 切り口(FORMATS)選定でこの確率でランダムな(まだ実績の薄い)ものを試す
 
 function formatSlot(minutes) {
@@ -101,38 +109,10 @@ function currentSlotMinutesJst() {
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
-// 今日投稿する時間帯を、実績に基づくε-greedy方式で選ぶ(1日1回だけ計算し、当日はstateに固定する)
-function buildTodaysPlan(slotStats) {
-  const chosen = [];
-  const remaining = [...CANDIDATE_SLOTS_JST];
-
-  function avgImpressions(slot) {
-    const s = slotStats[slot];
-    if (!s || s.trials === 0) return null;
-    return s.totalImpressions / s.trials;
-  }
-
-  for (let i = 0; i < POSTS_PER_DAY_TARGET && remaining.length > 0; i++) {
-    const untried = remaining.filter((s) => avgImpressions(s) === null);
-    let pick;
-    if (untried.length > 0) {
-      // 実績が無い時間帯を優先的に試す(探索の土台作り)
-      pick = untried[Math.floor(Math.random() * untried.length)];
-    } else if (Math.random() < EPSILON) {
-      pick = remaining[Math.floor(Math.random() * remaining.length)];
-    } else {
-      pick = remaining.reduce((best, s) => (avgImpressions(s) > avgImpressions(best) ? s : best), remaining[0]);
-    }
-    chosen.push(pick);
-    remaining.splice(remaining.indexOf(pick), 1);
-  }
-  return chosen.sort((a, b) => a - b);
-}
-
 function ensureTodaysPlan(state) {
   const today = todayJst();
   if (state.todaysPlan.date !== today) {
-    state.todaysPlan = { date: today, slots: buildTodaysPlan(state.slotStats) };
+    state.todaysPlan = { date: today, slots: [...slotsForToday()] };
     console.log(`本日の投稿予定時間帯(JST): ${state.todaysPlan.slots.map(formatSlot).join(', ')}`);
   }
   return state.todaysPlan;
@@ -444,8 +424,8 @@ async function main() {
     return;
   }
 
-  if (state.dailyPostCount.count >= MAX_POSTS_PER_DAY) {
-    console.log(`本日の投稿上限(${MAX_POSTS_PER_DAY}件)に達しているためスキップします。`);
+  if (state.dailyPostCount.count >= maxPostsToday()) {
+    console.log(`本日の投稿上限(${maxPostsToday()}件)に達しているためスキップします。`);
     saveState(state);
     return;
   }
