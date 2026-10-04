@@ -1,15 +1,15 @@
 {
   "recentCategories": [
-    "fx_basics",
     "video_recap",
     "fx_basics",
     "market_news",
-    "fx_basics"
+    "fx_basics",
+    "market_news"
   ],
   "lastVideoId": "UF3abeZ_-DE",
   "dailyPostCount": {
     "date": "2026-10-04",
-    "count": 0
+    "count": 1
   },
   "slotStats": {
     "10": {
@@ -64,18 +64,20 @@
     }
   },
   "recentFormats": [
-    "punchline",
     "listicle",
     "story_lead",
     "question_hook",
-    "direct_tip"
+    "direct_tip",
+    "listicle"
   ],
   "todaysPlan": {
     "date": "2026-10-04",
     "slots": [
       780
     ],
-    "postedSlots": []
+    "postedSlots": [
+      780
+    ]
   },
   "pendingMetrics": [
     {
@@ -83,54 +85,60 @@
       "slot": 780,
       "format": "direct_tip",
       "postedAt": "2026-10-03T04:01:44.817Z"
+    },
+    {
+      "tweetId": "2106595453378695543",
+      "slot": 780,
+      "format": "listicle",
+      "postedAt": "2026-10-04T04:01:09.520Z"
     }
   ],
   "fxTrendCache": {
-    "date": "2026-10-01",
+    "date": "2026-10-04",
     "examples": [
       {
-        "text": "同僚2人がLunaさん推してて、その理由が投資コミュニティでも高評価だから。 \nゴールドでみんな成功！ \n乗り遅れてる人後悔しないようにね💦 \n \nドル円　ゴールド　ビットコイン　米国株　日経平均 https://t.co/0iho8M1kyq",
+        "text": "ネジロメさんのツチノコ、ライチョウ持ってる方とトレード希望です",
         "engagement": 0
       },
       {
-        "text": "FX界隈ではまだまだ弱小だが\n9月の収支91万円\n早く億りたい https://t.co/ezaXUI3T3R",
+        "text": "🔓 #Dragonfly のハシーブ・クレシが警鐘\n\n「トークンアンロック（段階的なロック解除）が市場の信頼を蝕んでいる」\n\n4年間のベスティング期間中、解除のたびに売り浴びせる投資家も。\n「下がり続ける運命」という認識が広がり、買い手が寄り付かなくなる悪循環に⚠️\nhttps://t.co/fSDhw4aqec",
         "engagement": 0
       },
       {
-        "text": "ゼインさん、ズモさんファンの皆さま\n24時間トレード受け付けておりますのでお気軽にお願いいたします☺︎\nパックぶん回し、共に頑張りましょうね。",
+        "text": "━━━━━━━━━━━━━━━━\n🐾 フテ猫リサーチ\n◇◆ 市況株のキホン・1か月後の検証 ◆◇\n　　　　― メモリ編【2/2】―\n【通期売上3.6倍で、株価は\n　　2営業日1%｜\n　　　PERは14倍台に見えるにゃ】\n━━━━━━━━━━━━━━━━\n\n🐈‍⬛ で、3つ目の観測点は。設備投資だったよな。\n\n🐱 ⭕️ https://t.co/XHhiYTPC4V",
         "engagement": 0
       },
       {
-        "text": "この人知らないままFX続けてたら、今頃破産してたと思う。\n\nリスクを極限まで減らしたトレードスタイルだから、利益少なくても永続的にお金が増えていくんだよね。\n\nここまでの安心感、絶対他では得られない...！\n\nドル円 USDJPY ゴールド XAUUSD BTC https://t.co/EtI9w5Znv5",
+        "text": "宮城現地にてトレードゆる募してます〜\n可奈生誕くじ中心に一部他メンもあるって感じです\n色んなグッズが欲しい!\nぜひお願いします〜\n#きゅーすと交換 https://t.co/u1QdZdbIdh",
         "engagement": 0
       },
       {
-        "text": "株のカブー第２弾ラインスタンプ🥬リリースしました💚\n株式投資用語・スラングは勿論、日常使える系スタンプも、タップリ40種入り🥦\n#イラスト　#LINEスタンプ\n URLタップしてサンプル覗けます↓　LINE STORE https://t.co/fANWrs73aq https://t.co/dHsDIrCciP",
+        "text": "1度やってみたかったのでw\nFXトレードであなたが知りたいのはどれ？",
         "engagement": 0
       }
     ]
   },
   "viralTrendCache": {
-    "date": "2026-10-01",
+    "date": "2026-10-04",
     "examples": [
       {
-        "text": "裏金問題を抱えた明細あるある\n\n迷彩がある",
-        "engagement": 1
-      },
-      {
-        "text": "わかるーーー https://t.co/VUf6mqstTY",
+        "text": "交換でゲットしたあと普通に引いちゃうのあるあるすぎて😢 https://t.co/3u2IcjWhST",
         "engagement": 0
       },
       {
-        "text": "最近、映画を映画館で週４.５本は観てたりもっと観てたりする\n\nもう、ゲームもしたいし本読みたいし、\n他の事もしたいしお金もかかるし\n楽しいが大変な悩み寝不足ぎみ\n\n観ない映画は、予告でつまらないとだいたいわかるけど\n最近、良さげな映画が多すぎる\n特に邦画が多くて困る",
+        "text": "わかる EBiDANは年齢間違ってるよね？の人が多すぎる",
         "engagement": 0
       },
       {
-        "text": "ビクビクするの、わかる気がする。夜勤明けの緊張感みたい！💤 https://t.co/mM314FnBM5",
+        "text": "あるあるー！ みんな同じじゃない？ 😬😌",
         "engagement": 0
       },
       {
-        "text": "介護職あるある？\n\n排泄介助の取れ高が歩合制なら大金持ちって考える。",
+        "text": "あるあるー！ みんな同じじゃない？ 😌📖",
+        "engagement": 0
+      },
+      {
+        "text": "女子枠という制度を叩くのはわかるけど、\n女子枠で入った人を叩くってそれは間違ってるだろ\nただある制度を使っただけなんだから",
         "engagement": 0
       }
     ]
