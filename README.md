@@ -1,8 +1,29 @@
 # x-auto-tac-bot
 
 TAC_FXtrade(YouTube「TACテクニカル分析講座」の公式X)の自動投稿ボット。
-GitHub Actions + cron-job.org(外部トリガー)で、毎日7:30/19:00 JSTに
-Claude Codeが投稿文を生成し、そのままXに自動投稿する。
+GitHub Actions + cron-job.org(外部トリガー、15分おき)で、2種類の投稿を自動化している。
+
+| 投稿 | 時刻(JST) | スクリプト | 内容 |
+|---|---|---|---|
+| AI生成投稿 | 毎日13:00(1回) | `tac-post.js` | Claude Codeが話題・切り口を変えて文章を生成し投稿 |
+| ドル円レート発表 | 毎日9:00以降(1回) | `rate-post.js` | Yahoo Financeの現在レートを固定フォーマット+画像で投稿(AI不使用) |
+
+各スクリプトは「時刻が来ていて本日未投稿か」だけを判定するため、起動が遅延しても自動でキャッチアップする。
+状態は `state.json`(AI投稿)・`rate-state.json`(レート投稿)に保存される。
+
+## ドル円レート投稿の仕様
+
+```
+サトシ「ピカチュウ！かわせ！」
+
+ピカチュウ「米ドル/円　157.78」   ← 小数点2桁、全角スペース区切り
+[画像: rate-announce.jpg]
+```
+
+- レート取得: Yahoo Finance(`USDJPY=X`)。取得失敗・異常値・4日以上古い値は投稿せず、次回の起動で再試行
+- 画像: `rate-announce.jpg` を差し替えれば画像を変更できる(5MB以下のJPEG)
+- 動作確認: `node rate-post.js --dry-run`(投稿せず、レート取得と文面のみ確認)。
+  GitHub上で試す場合は Actions → TAC Auto Post → Run workflow で `rate_dry_run` にチェック
 
 ## 年1回のメンテナンスが必要な項目
 

@@ -89,4 +89,16 @@ async function apiPostJson(url, bodyObj, accessToken, accessSecret) {
   return json;
 }
 
-module.exports = { buildSignature, oauthParams, buildAuthHeader, postForm, apiGet, apiPostJson, loadConfig };
+// POST with multipart/form-data body (e.g. media upload) signed with a user's access token.
+// multipartはOAuth1署名の対象外なので、ボディ内容は署名に含めない。
+async function apiPostMultipart(url, formData, accessToken, accessSecret) {
+  const oParams = oauthParams({ oauth_token: accessToken });
+  const sig = buildSignature('POST', url, oParams, accessSecret);
+  const header = buildAuthHeader({ ...oParams, oauth_signature: sig });
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: header }, body: formData });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+  return text ? JSON.parse(text) : {};
+}
+
+module.exports = { buildSignature, oauthParams, buildAuthHeader, postForm, apiGet, apiPostJson, apiPostMultipart, loadConfig };
