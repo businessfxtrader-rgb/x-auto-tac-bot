@@ -21,8 +21,8 @@
       "totalImpressions": 1059
     },
     "780": {
-      "trials": 22,
-      "totalImpressions": 1287
+      "trials": 23,
+      "totalImpressions": 1364
     },
     "1140": {
       "trials": 14,
@@ -51,8 +51,8 @@
       "totalImpressions": 841
     },
     "direct_tip": {
-      "trials": 8,
-      "totalImpressions": 386
+      "trials": 9,
+      "totalImpressions": 463
     },
     "punchline": {
       "trials": 2,
@@ -80,12 +80,6 @@
     ]
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2107686278577729627",
-      "slot": 780,
-      "format": "direct_tip",
-      "postedAt": "2026-10-07T04:15:42.527Z"
-    },
     {
       "tweetId": "2108045011593896033",
       "slot": 780,
