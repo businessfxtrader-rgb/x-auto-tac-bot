@@ -8,8 +8,8 @@
   ],
   "lastVideoId": "BGeR-jpSS-g",
   "dailyPostCount": {
-    "date": "2026-10-16",
-    "count": 2
+    "date": "2026-10-17",
+    "count": 0
   },
   "slotStats": {
     "10": {
@@ -71,13 +71,12 @@
     "punchline"
   ],
   "todaysPlan": {
-    "date": "2026-10-16",
+    "date": "2026-10-17",
     "slots": [
-      780
+      450,
+      1140
     ],
-    "postedSlots": [
-      780
-    ]
+    "postedSlots": []
   },
   "pendingMetrics": [
     {
