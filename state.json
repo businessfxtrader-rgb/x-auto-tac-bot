@@ -1,15 +1,15 @@
 {
   "recentCategories": [
     "video_announcement",
-    "video_announcement",
     "fx_basics",
     "video_recap",
-    "fx_basics"
+    "fx_basics",
+    "video_announcement"
   ],
-  "lastVideoId": "BGeR-jpSS-g",
+  "lastVideoId": "f0Addd2bE3o",
   "dailyPostCount": {
     "date": "2026-10-17",
-    "count": 2
+    "count": 3
   },
   "slotStats": {
     "10": {
@@ -64,11 +64,11 @@
     }
   },
   "recentFormats": [
-    "question_hook",
     "story_lead",
     "punchline",
     "question_hook",
-    "listicle"
+    "listicle",
+    "story_lead"
   ],
   "todaysPlan": {
     "date": "2026-10-17",
@@ -93,6 +93,12 @@
       "slot": 1140,
       "format": "listicle",
       "postedAt": "2026-10-17T10:15:53.555Z"
+    },
+    {
+      "tweetId": "2111412208856895576",
+      "slot": "unplanned",
+      "format": "story_lead",
+      "postedAt": "2026-10-17T11:01:13.552Z"
     }
   ],
   "fxTrendCache": {
