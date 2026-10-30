@@ -29,14 +29,14 @@
       "totalImpressions": 1446
     },
     "unplanned": {
-      "trials": 8,
-      "totalImpressions": 206
+      "trials": 9,
+      "totalImpressions": 236
     }
   },
   "formatStats": {
     "question_hook": {
-      "trials": 23,
-      "totalImpressions": 1212
+      "trials": 24,
+      "totalImpressions": 1242
     },
     "listicle": {
       "trials": 25,
@@ -78,12 +78,6 @@
     "postedSlots": []
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2115715579864662254",
-      "slot": "unplanned",
-      "format": "question_hook",
-      "postedAt": "2026-10-29T08:01:17.144Z"
-    },
     {
       "tweetId": "2115975681691570213",
       "slot": "unplanned",
