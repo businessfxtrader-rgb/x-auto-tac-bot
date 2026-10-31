@@ -2,14 +2,14 @@
   "recentCategories": [
     "video_announcement",
     "video_announcement",
-    "video_announcement",
     "market_news",
-    "fx_basics"
+    "fx_basics",
+    "market_news"
   ],
   "lastVideoId": "JQb5eZRDOvk",
   "dailyPostCount": {
     "date": "2026-11-01",
-    "count": 0
+    "count": 1
   },
   "slotStats": {
     "10": {
@@ -64,11 +64,11 @@
     }
   },
   "recentFormats": [
-    "question_hook",
     "listicle",
     "story_lead",
     "question_hook",
-    "punchline"
+    "punchline",
+    "listicle"
   ],
   "todaysPlan": {
     "date": "2026-11-01",
@@ -76,7 +76,9 @@
       450,
       1140
     ],
-    "postedSlots": []
+    "postedSlots": [
+      450
+    ]
   },
   "pendingMetrics": [
     {
@@ -90,54 +92,60 @@
       "slot": 1140,
       "format": "punchline",
       "postedAt": "2026-10-31T10:45:44.220Z"
+    },
+    {
+      "tweetId": "2116659235836567999",
+      "slot": 450,
+      "format": "listicle",
+      "postedAt": "2026-10-31T22:31:02.231Z"
     }
   ],
   "fxTrendCache": {
-    "date": "2026-10-29",
+    "date": "2026-11-01",
     "examples": [
       {
-        "text": "もし5000万円を受け取ったら、何に使いますか？💴\n\n①借金の返済\n②投資\n③生活をより豊かにするために使う https://t.co/4JnIFgbmHe",
-        "engagement": 2
-      },
-      {
-        "text": "カナダのパッカーCanada Packers、7〜9月期も赤字　減収の要因にカットアウト安と円安\n\n2025年にMaple Leaf",
+        "text": "【自己資金3,000万円】金利・建築費高騰時代に選ぶべき「アセット別・最悪の選択」 https://t.co/sEmHpiwp25",
         "engagement": 0
       },
       {
-        "text": "セチームは主力1人出せば主力クラス2人貰える事わかったからこれからもホークスにそういうトレード仕掛けてパ終焉を迎えそう",
+        "text": "【今日の鑑定チャンス💎】2026/11/01\n\n1位 リーリエ（帽子リーリエ）SR[…\n美品 ¥460,000 → PSA10 ¥1,280,000（+¥680,020）\n\n利益は手数料・鑑定料込みの手取り。90日最悪日基準でも黒字だけ厳選\n\n🔖ブクマ推奨・毎朝7:30更新\n\n#ポケカ #遊戯王 #ワンピカード #PSA鑑定 #ポケカ投資 https://t.co/OBgQ9Q89va",
         "engagement": 0
       },
       {
-        "text": "なんでこんなに山本のトレードで荒れてるんだ？悪くはなかったと思うけどな…。",
+        "text": "💡値下げ💡\nGoogleインデックス125・DR9｜家計・税金・投資を扱う62記事サイト【今月末まで】\n\n販売価格 16,199円 ← 17,999円\n\n#RM値下げ #サイト売買 #副業 #ブログ #アフィリエイト #Webライター #ブロガー #アフィリエイター\n\nhttps://t.co/jGAfOlXftR",
         "engagement": 0
       },
       {
-        "text": "株式投資で本当に差がつくのは、銘柄選びより「最初のルール」。\n2026年にNISAを始めるなら、まず覚えてほしい8つの鉄則。\n① 配当株で土台を作る。NTT・三菱UFJは利回りだけでなく、業績と配当方針も確認。\n② 大型成長株は長期目線。トヨタ・任天堂は世界展開と成長余地に注目。\n③ AI・半導体は厳選 https://t.co/EotKyLDhGk",
+        "text": "FX戦士かなでちゃん https://t.co/4rqoa8r7Ul",
+        "engagement": 0
+      },
+      {
+        "text": "これ知ってる人、バリバリ英語でビジネスやってるでしょ？\nあの投資家のウォーレン・バフェットが広めた有名なビジネス用語。 https://t.co/ZbPJCNwBeF",
         "engagement": 0
       }
     ]
   },
   "viralTrendCache": {
-    "date": "2026-10-29",
+    "date": "2026-11-01",
     "examples": [
       {
-        "text": "どなたかアイラ様の資料をお持ちの方はいらっしゃいませんか、、、\n腰から上のデザインと袖のデザインがわかる画像をお持ちの方はいらっしゃいませんか、、、\n資料が欲しいんです、、、",
+        "text": "最後まで見たらわかる https://t.co/IEUqjE0fbz",
         "engagement": 0
       },
       {
-        "text": "俺あるある\n\n全部俺のせい",
+        "text": "フランスの大規模デモは「暴動とは別」と書いた記事ですわ。共有した声は票順567位、なるほど1回。デモと暴動は切り離せないと書いた声は206件で、共感の21.8%でしたの。\n\nMost agree votes went to comments accepting the distinction, then asking who looted.\n\n#フランス #France #ヤフコメ https://t.co/jK27vEDhPG",
         "engagement": 0
       },
       {
-        "text": "店員さんへ\n言い返したい気持ちもわかるけど、ああいう客は適当に「すみませんでした💦」で受け流しときゃ終わるで",
+        "text": "わかるwww https://t.co/iVgmqxoGeX",
         "engagement": 0
       },
       {
-        "text": "「日本経済にも貢献しているはず。」\n\n“小日本”っていう考え方で質問してるのがよくわかる。\n気持ちいい位図々しいのよね。 https://t.co/7KTAgZr73p",
+        "text": "福岡市民、お堀と石垣と桜でどこかすぐわかる説。\n県外『桜がすごかね、ここどこ？』\n福岡『中央区のあそこたい、言わんでもわかるやろ』\n春になると毎年ここに行きたくなるっちゃん。\n福岡市民なら即答できるよね？ https://t.co/kWX1kGXcsn",
         "engagement": 0
       },
       {
-        "text": "立ちションあるある\n\nチャック開けてからベルト外すと一気にパンツが出てきてチャック開けっ放しだった!?っと一瞬錯覚する",
+        "text": "共感でしかない https://t.co/qKv29ZXo0K",
         "engagement": 0
       }
     ]
