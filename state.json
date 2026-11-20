@@ -29,8 +29,8 @@
       "totalImpressions": 1688
     },
     "unplanned": {
-      "trials": 14,
-      "totalImpressions": 1283
+      "trials": 15,
+      "totalImpressions": 1771
     }
   },
   "formatStats": {
@@ -39,8 +39,8 @@
       "totalImpressions": 1819
     },
     "listicle": {
-      "trials": 34,
-      "totalImpressions": 3728
+      "trials": 35,
+      "totalImpressions": 4216
     },
     "casual_chat": {
       "trials": 5,
@@ -79,12 +79,6 @@
     "postedSlots": []
   },
   "pendingMetrics": [
-    {
-      "tweetId": "2123431473462002089",
-      "slot": "unplanned",
-      "format": "listicle",
-      "postedAt": "2026-11-19T15:01:29.603Z"
-    },
     {
       "tweetId": "2123612669391331483",
       "slot": "unplanned",
