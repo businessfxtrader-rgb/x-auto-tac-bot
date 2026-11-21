@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { apiPostJson, apiPostMultipart, loadConfig } = require('./oauth-lib');
+const sheet = require('./sheet');
 
 const config = loadConfig();
 const STATE_FILE = path.join(__dirname, 'rate-state.json');
@@ -107,9 +108,16 @@ async function main() {
   console.log(`投稿しました(tweet id: ${posted.data.id})`);
 
   saveState({ lastPostedDate: today, lastRate: rate, lastTweetId: posted.data.id });
+
+  sheet.queue('投稿履歴', [
+    sheet.jstString(), 'レート', '平日8:00以降', 'ドル円レート', '固定フォーマット', '', 'なし', String(posted.data.id), text,
+  ]);
 }
 
-main().catch((err) => {
-  console.error('エラー:', err.message);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('エラー:', err.message);
+    sheet.queue('エラー履歴', [sheet.jstString(), 'レート投稿', String(err.message).slice(0, 300), sheet.runUrl()]);
+    process.exitCode = 1;
+  })
+  .then(() => sheet.flush());

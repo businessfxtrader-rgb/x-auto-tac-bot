@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       rate_dry_run:
-        description: '動作確認用: ドル円レート投稿をdry-run(レート取得確認のみ・投稿しない)で実行する'
+        description: '動作確認用: ドル円レート投稿と日次スナップショットをdry-run(取得・アクセス確認のみ。投稿も書き込みもしない)で実行する'
         type: boolean
         default: false
 
@@ -44,6 +44,8 @@ jobs:
           POSTER_ACCESS_SECRET: ${{ secrets.POSTER_ACCESS_SECRET }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: node tac-post.js
 
       - name: Post USD/JPY rate
@@ -53,14 +55,27 @@ jobs:
           CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
           POSTER_ACCESS_TOKEN: ${{ secrets.POSTER_ACCESS_TOKEN }}
           POSTER_ACCESS_SECRET: ${{ secrets.POSTER_ACCESS_SECRET }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: node rate-post.js ${{ inputs.rate_dry_run && '--dry-run' || '' }}
+
+      - name: Daily snapshot to sheet
+        if: always()
+        env:
+          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
+          POSTER_ACCESS_TOKEN: ${{ secrets.POSTER_ACCESS_TOKEN }}
+          POSTER_ACCESS_SECRET: ${{ secrets.POSTER_ACCESS_SECRET }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: node daily-snapshot.js ${{ inputs.rate_dry_run && '--dry-run' || '' }}
 
       - name: Commit updated state
         if: always()
         run: |
           git config user.name "tac-post-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add state.json rate-state.json
+          git add state.json rate-state.json snapshot-state.json
           git diff --cached --quiet && exit 0
           git commit -m "update state"
           for i in 1 2 3; do

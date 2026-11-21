@@ -12,6 +12,7 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { apiPostJson, apiGet, loadConfig } = require('./oauth-lib');
+const sheet = require('./sheet');
 
 const config = loadConfig();
 const STATE_FILE = path.join(__dirname, 'state.json');
@@ -305,7 +306,11 @@ async function generateTweet(categoryId, context, formatId, trendExamples, viral
   }
 
   try {
-    const stdout = execFileSync('claude', args, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+    // 文章生成に不要な認証情報(Xの鍵・Googleの鍵)は、claude CLIのサブプロセスに渡さない
+    const childEnv = { ...process.env };
+    for (const k of ['GOOGLE_SERVICE_ACCOUNT_JSON', 'GOOGLE_SERVICE_ACCOUNT_FILE', 'SHEET_ID',
+      'CONSUMER_KEY', 'CONSUMER_SECRET', 'POSTER_ACCESS_TOKEN', 'POSTER_ACCESS_SECRET']) delete childEnv[k];
+    const stdout = execFileSync('claude', args, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, env: childEnv });
     const parsed = JSON.parse(stdout);
     return (parsed.result || '').trim();
   } finally {
@@ -386,6 +391,12 @@ async function collectPendingMetrics(state) {
 
       const slotLabel = typeof slot === 'number' ? formatSlot(slot) : slot;
       console.log(`ツイート${entry.tweetId}(${slotLabel} / ${entry.format || '不明'})のインプレッション: ${impressions}`);
+
+      const pm = res.data.public_metrics;
+      sheet.queue('投稿成績', [
+        String(entry.tweetId), sheet.jstString(), impressions,
+        pm.like_count ?? '', pm.retweet_count ?? '', pm.reply_count ?? '', pm.quote_count ?? '', pm.bookmark_count ?? '',
+      ]);
     } catch (err) {
       console.error(`インプレッション取得エラー(${entry.tweetId}): ${err.message}`);
       stillPending.push(entry);
@@ -399,6 +410,8 @@ async function main() {
   const state = loadState();
 
   await collectPendingMetrics(state);
+  // 後続の処理で例外が出ても、取得済みの成績が二重に集計・記録されないよう、ここで先に保存する
+  saveState(state);
 
   const today = todayJst();
   if (state.dailyPostCount.date !== today) {
@@ -471,6 +484,7 @@ async function main() {
 
   if (!isValid(text)) {
     console.error('再生成後も条件を満たさないため、今回は投稿をスキップします。');
+    sheet.queue('エラー履歴', [sheet.jstString(), 'AI投稿', '生成結果が条件を満たさずスキップ(次回の起動で再試行)', sheet.runUrl()]);
     saveState(state);
     return;
   }
@@ -496,11 +510,23 @@ async function main() {
     postedAt: new Date().toISOString(),
   });
   saveState(state);
+
+  const categoryLabel = categoryId === 'video_announcement'
+    ? '新着動画告知'
+    : (CATEGORIES.find((c) => c.id === categoryId) || {}).label || categoryId;
+  const formatLabel = (FORMATS.find((f) => f.id === formatId) || {}).label || formatId;
+  sheet.queue('投稿履歴', [
+    sheet.jstString(), 'AI', isPlannedSlot ? formatSlot(dueSlot) : '随時', categoryLabel, formatLabel,
+    weightedTweetLength(text), (text.match(URL_REGEX) || []).length > 0 ? 'あり' : 'なし', String(posted.data.id), text,
+  ]);
 }
 
-main().catch((err) => {
-  console.error('エラー:', err.message);
-  if (err.stderr) console.error('stderr:', err.stderr.toString());
-  if (err.stdout) console.error('stdout:', err.stdout.toString());
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('エラー:', err.message);
+    if (err.stderr) console.error('stderr:', err.stderr.toString());
+    if (err.stdout) console.error('stdout:', err.stdout.toString());
+    sheet.queue('エラー履歴', [sheet.jstString(), 'AI投稿', String(err.message).slice(0, 300), sheet.runUrl()]);
+    process.exitCode = 1;
+  })
+  .then(() => sheet.flush());
