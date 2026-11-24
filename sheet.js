@@ -30,6 +30,28 @@ const TAB_DEFINITIONS = [
     title: 'エラー履歴',
     headers: ['日時(JST)', '処理', '内容', '実行ログ'],
   },
+  // 以下はフォロバ機能用
+  {
+    title: 'フォロバ候補',
+    headers: ['ユーザーID', 'ユーザー名', '種別', 'アカウント作成日', '初回確認日', '状態', '試行回数', '鍵', 'メモ'],
+  },
+  {
+    title: 'API利用',
+    headers: ['日付(JST)', '種別', '件数', '概算費用($)', 'サイクル開始日'],
+  },
+  {
+    title: '設定',
+    headers: ['項目', '値', '説明'],
+    initialRows: [
+      ['フォロバ自動化', 'OFF', 'ONにすると自動フォロー・解除が動きます。OFFの間は何もしません(APIも呼びません)'],
+      ['フォロー上限(件/日)', 5, ''],
+      ['解除上限(件/日)', 5, ''],
+      ['月予算ガード($/サイクル)', 5, 'フォロー・解除・一覧読取の概算費用がこの額に達したら、そのサイクルは停止します(サイクルは毎月11日開始)'],
+      ['アカウント作成からの最低日数', 30, 'これより新しいアカウントにはフォローバックしません'],
+      ['フォロワー読取単価($/件)', 0.001, 'consoleの使用状況で実額を確認したら調整してください'],
+      ['一覧の全件読み取り', 'OFF', 'OFFの間は先頭200人だけ読む(初回のみ)。読取単価を確認してからONにすると、月1回全件を読んで解除候補も検出する'],
+    ],
+  },
 ];
 
 let cachedToken = null;
@@ -121,7 +143,7 @@ async function ensureTabs() {
       result.skipped.push(tab.title);
       continue;
     }
-    await api('PUT', rangeUrl(tab.title, 'A1', '?valueInputOption=RAW'), { values: [tab.headers] });
+    await api('PUT', rangeUrl(tab.title, 'A1', '?valueInputOption=RAW'), { values: [tab.headers, ...(tab.initialRows || [])] });
     result.headerWritten.push(tab.title);
   }
   return result;
@@ -194,4 +216,28 @@ async function flush() {
   return allOk;
 }
 
-module.exports = { isConfigured, listTabs, ensureTabs, queue, flush, jstString, runUrl, api, rangeUrl, TAB_DEFINITIONS };
+// 範囲の値を読む(空の行は返らない。行末の空セルは省略される)
+async function getValues(tab, a1) {
+  const res = await api('GET', rangeUrl(tab, a1));
+  return res.values || [];
+}
+
+// queue/flushを通さず、その場で追記する(フォロー等、1件ごとに確実に記録したい処理用)
+async function appendNow(tab, rows, a1 = 'A1') {
+  if (rows.length === 0) return;
+  await api('POST', rangeUrl(tab, a1, ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS'), { values: rows });
+}
+
+// 複数の範囲をまとめて更新する。updates: [{ tab, a1, values }]
+async function updateValues(updates) {
+  if (updates.length === 0) return;
+  await api('POST', `${SHEETS_BASE}/${process.env.SHEET_ID}/values:batchUpdate`, {
+    valueInputOption: 'RAW',
+    data: updates.map((u) => ({ range: `'${u.tab}'!${u.a1}`, values: u.values })),
+  });
+}
+
+module.exports = {
+  isConfigured, listTabs, ensureTabs, queue, flush, jstString, runUrl, api, rangeUrl,
+  getValues, appendNow, updateValues, TAB_DEFINITIONS,
+};

@@ -101,4 +101,15 @@ async function apiPostMultipart(url, formData, accessToken, accessSecret) {
   return text ? JSON.parse(text) : {};
 }
 
-module.exports = { buildSignature, oauthParams, buildAuthHeader, postForm, apiGet, apiPostJson, apiPostMultipart, loadConfig };
+// DELETE (e.g. unfollow) signed with a user's access token. No body.
+async function apiDelete(url, accessToken, accessSecret) {
+  const oParams = oauthParams({ oauth_token: accessToken });
+  const sig = buildSignature('DELETE', url, oParams, accessSecret);
+  const header = buildAuthHeader({ ...oParams, oauth_signature: sig });
+  const res = await fetch(url, { method: 'DELETE', headers: { Authorization: header } });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+  return text ? JSON.parse(text) : {};
+}
+
+module.exports = { buildSignature, oauthParams, buildAuthHeader, postForm, apiGet, apiPostJson, apiPostMultipart, apiDelete, loadConfig };
