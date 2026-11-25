@@ -70,7 +70,7 @@ function parseSettings(rows) {
     unfollowCap: num('解除上限(件/日)', 5),
     budgetGuard: num('月予算ガード($/サイクル)', 5),
     minAgeDays: num('アカウント作成からの最低日数', 30),
-    readPrice: num('フォロワー読取単価($/件)', 0.001),
+    readPrice: num('フォロワー読取単価($/件)', 0.01),
     fullReadEnabled: String(m.get('一覧の全件読み取り') || '').trim().toUpperCase() === 'ON',
   };
 }
