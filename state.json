@@ -8,8 +8,8 @@
   ],
   "lastVideoId": "OEQ4hnooacQ",
   "dailyPostCount": {
-    "date": "2026-11-26",
-    "count": 2
+    "date": "2026-11-27",
+    "count": 0
   },
   "slotStats": {
     "10": {
@@ -71,13 +71,11 @@
     "surprising_fact"
   ],
   "todaysPlan": {
-    "date": "2026-11-26",
+    "date": "2026-11-27",
     "slots": [
       780
     ],
-    "postedSlots": [
-      780
-    ]
+    "postedSlots": []
   },
   "pendingMetrics": [
     {
