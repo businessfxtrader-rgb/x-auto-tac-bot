@@ -21,8 +21,8 @@
       "totalImpressions": 1597
     },
     "780": {
-      "trials": 54,
-      "totalImpressions": 4253
+      "trials": 55,
+      "totalImpressions": 4274
     },
     "1140": {
       "trials": 27,
@@ -51,8 +51,8 @@
       "totalImpressions": 1496
     },
     "direct_tip": {
-      "trials": 11,
-      "totalImpressions": 539
+      "trials": 12,
+      "totalImpressions": 560
     },
     "punchline": {
       "trials": 8,
@@ -86,12 +86,6 @@
       "slot": "unplanned",
       "format": "surprising_fact",
       "postedAt": "2026-11-26T10:01:24.556Z"
-    },
-    {
-      "tweetId": "2126164444514267527",
-      "slot": 780,
-      "format": "direct_tip",
-      "postedAt": "2026-11-27T04:01:20.578Z"
     },
     {
       "tweetId": "2126447465205264875",
